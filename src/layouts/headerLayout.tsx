@@ -16,8 +16,6 @@ const NavBar = () => {
   )
 }
 
-
-
 export const HeaderLayout = () => {
   const { t } = useTranslation("header")
   return (
