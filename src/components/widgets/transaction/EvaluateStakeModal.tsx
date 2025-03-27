@@ -28,7 +28,7 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
   const updateOwnerStake = (cti:CtiData) => {
     const requesterEvaluateList = cti.requesterEvaluateList || [];
     const currentCtiItem = cti;
-    if(requesterEvaluateList.length > 3 &&cti.evaluateStatus&&cti.stake>0){
+    if(requesterEvaluateList.length >= 3 &&cti.stakeStatus === StakeStatusEnum.STAKING){
       //评论数量大于3，且提供者已进行评价，则判断评估者的分数决定是否扣除押金，否则添加及时奖励
       const ownerEvaluateQuality = cti.evaluateQuality||0;
       const avgEvaluateQuality = cti.avgEvaluateQuality||0;
@@ -36,7 +36,8 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
         currentCtiItem.stakeStatus = StakeStatusEnum.DEDUCTED; //评估质量与平均评估质量相差超过30%，扣除押金
       }else{
         currentCtiItem.stakeStatus = StakeStatusEnum.RETURNED; //评估质量与平均评估质量相差不超过30%，返回押金
-        currentCtiItem.reward += currentCtiItem.stake;
+        currentCtiItem.reward = parseFloat((currentCtiItem.reward + currentCtiItem.stake).toFixed(2));
+        
       }
     }
     updateCtiItem(cti.ctiId, {
@@ -52,6 +53,7 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
       currentCtiItem.reward = reward;
       currentCtiItem.stake = stake;
       currentCtiItem.stakeStatus = StakeStatusEnum.STAKING;
+      currentCtiItem.requesterEvaluateList = cti.requesterEvaluateList || [];
       updateCtiItem(cti.ctiId, {
         ...currentCtiItem,
       });
