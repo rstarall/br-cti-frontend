@@ -9,6 +9,7 @@ import CtiDetail from '@/components/cti/CtiDetail';
 import EvaluateStakeModal from './EvaluateStakeModal';
 import { useCtiStore, CtiData } from '@/store/ctiStore';
 import { useMessage } from '@/context/MessageProvider';
+import { StakeStatusEnum } from '@/store/user';
 const { Dragger } = Upload;
 
 
@@ -43,8 +44,10 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
       key: 'evaluateStatus',
       width: '10%',
       align: 'center' as const,
-      render: (status: boolean) => (
-        <Tag color={status ? 'green' : 'orange'}>{status ? '已评估' : '未评估'}</Tag>
+      render: (_: unknown, record: CtiData) => (
+        <Tag color={record.stakeStatus != StakeStatusEnum.UNSTAKED ? 'green' : 'orange'}>
+          {record.stakeStatus != StakeStatusEnum.UNSTAKED ? '已评估' : '未评估'}
+        </Tag>
       )
     },
     {
@@ -59,7 +62,16 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
       dataIndex: 'stake',
       key: 'stake',
       width: '10%',
-      align: 'center' as const
+      align: 'center' as const,
+      render: (_: unknown, record: CtiData) => (
+        <Tag color={record.stakeStatus === StakeStatusEnum.UNSTAKED ? 'orange' : 
+        (record.stakeStatus === StakeStatusEnum.STAKING ? 'orange' : 
+        (record.stakeStatus === StakeStatusEnum.RETURNED ? 'green' : 'red'))}>
+          {record.stakeStatus === StakeStatusEnum.UNSTAKED ? '未抵押' : 
+          (record.stakeStatus === StakeStatusEnum.STAKING ? `抵押${record.stake}` : 
+          (record.stakeStatus === StakeStatusEnum.RETURNED ? `返回${record.stake}` : `扣除${record.stake}`))}
+        </Tag>
+      )
     },
     {
       title: '收益积分',

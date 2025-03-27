@@ -7,9 +7,8 @@ import CtiDetail from '@/components/cti/CtiDetail';
 import EvaluateStakeModal from '@/components/widgets/transaction/EvaluateStakeModal';
 import { CtiData } from '@/store/ctiStore';
 import { useMessage } from '@/context/MessageProvider';
-import { ExclamationCircleFilled } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-
+import { StakeStatusEnum } from '@/store/user';
 export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
   const { ctiRequestItems, removeFromCtiRequest } = useCtiRequestStore();
   const { openWindow, openModalWindow } = useWindowManager();
@@ -62,7 +61,18 @@ export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
       dataIndex: 'stake',
       key: 'stake',
       width: '10%',
-      align: 'center' as const
+      align: 'center' as const,
+      render: (_: unknown, record: CtiData) => {
+        const evaluateItem = record.requesterEvaluateList?.find((evaluate) => evaluate.userId === userInfo?.userId);
+        return <Tag color={evaluateItem?.stakeStatus === StakeStatusEnum.DEDUCTED ? 'red' :
+          (evaluateItem?.stakeStatus === StakeStatusEnum.STAKING ? 'orange' : (
+           evaluateItem?.stakeStatus === StakeStatusEnum.RETURNED ? 'green' : 'orange'))}>
+
+          {evaluateItem?.stakeStatus === StakeStatusEnum.DEDUCTED ? `扣除${evaluateItem?.stake}` :
+           (evaluateItem?.stakeStatus === StakeStatusEnum.RETURNED ? `返回${evaluateItem?.stake}` :
+           (evaluateItem?.stakeStatus === StakeStatusEnum.STAKING ? `抵押${evaluateItem?.stake}` : `未抵押`))}
+        </Tag>
+      }
     },
     {
       title: '操作',

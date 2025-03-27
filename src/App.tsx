@@ -11,11 +11,13 @@ import './App.css'
 import { WindowManagerProvider } from '@/context/WindowManager'
 import { MessageProvider } from './context/MessageProvider';
 import Sidebar from '@/layouts/sidebar'
+import { LoadingProvider } from '@/context/LoadingProvider';
 const App: React.FC = () => {
   return (
-    <MessageProvider>
-      <WindowManagerProvider>
-        <Sidebar />
+    <LoadingProvider>
+      <MessageProvider>
+        <WindowManagerProvider>
+          <Sidebar />
         <BrowserRouter>
           <HeaderLayout />
           <Routes>
@@ -30,6 +32,7 @@ const App: React.FC = () => {
         </BrowserRouter>
       </WindowManagerProvider>
     </MessageProvider>
+    </LoadingProvider>
   )
 }
 

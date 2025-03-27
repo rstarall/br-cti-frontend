@@ -8,6 +8,8 @@ import { useWindowManager } from '@/context/WindowManager';
 import { useCtiStore } from '@/store/ctiStore';
 import { useUserStore } from '@/store/user';
 import { UserEvaluateStake } from '@/store/user';
+import { useLoading } from '@/context/LoadingProvider';
+import { StakeStatusEnum } from '@/store/user';
 const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boolean }) => {
   const { closeWindow } = useWindowManager();
   const { messageApi } = useMessage();
@@ -16,7 +18,7 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
   const [stake, setStake] = useState(0);
   const { updateCtiItem } = useCtiStore();
   const { userInfo } = useUserStore();
-
+  const { showLoading, hideLoading } = useLoading();
   const calculateValues = (Q: number) => {
     const rewardValue = 0.9 * Math.log(1 + Q);
     const stakeValue = 0.1 * Math.log(1 + Q);
@@ -31,11 +33,10 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
       const ownerEvaluateQuality = cti.evaluateQuality||0;
       const avgEvaluateQuality = cti.avgEvaluateQuality||0;
       if(Math.abs(ownerEvaluateQuality - avgEvaluateQuality) > 0.3*avgEvaluateQuality){
-        currentCtiItem.deductStake = true; //评估质量与平均评估质量相差超过30%，扣除押金
-        currentCtiItem.stake = 0;
+        currentCtiItem.stakeStatus = StakeStatusEnum.DEDUCTED; //评估质量与平均评估质量相差超过30%，扣除押金
       }else{
+        currentCtiItem.stakeStatus = StakeStatusEnum.RETURNED; //评估质量与平均评估质量相差不超过30%，返回押金
         currentCtiItem.reward += currentCtiItem.stake;
-        currentCtiItem.stake = 0;
       }
     }
     updateCtiItem(cti.ctiId, {
@@ -43,37 +44,55 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
     });
   }
   const onFinish = (values: { Q: number }) => {
-    messageApi.success('评估提交成功');
+    
     const currentCtiItem = cti
     if (isOwner) {
       currentCtiItem.evaluateStatus = true;
       currentCtiItem.evaluateQuality = values.Q;
       currentCtiItem.reward = reward;
       currentCtiItem.stake = stake;
+      currentCtiItem.stakeStatus = StakeStatusEnum.STAKING;
       updateCtiItem(cti.ctiId, {
         ...currentCtiItem,
       });
       //更新提供者押金
       updateOwnerStake(currentCtiItem);
+      messageApi.success('评估提交成功');
     }else{
        const newEvaluate = {
         ctiId: cti.ctiId,
         userId: userInfo?.userId,
         evaluateQuality: values.Q,
         avgEvaluateQuality: 0,
-        deductStake: false,
+        stake: parseFloat((0.1*values.Q).toFixed(2)),
+        stakeStatus: StakeStatusEnum.STAKING,
        } as UserEvaluateStake
        const requesterEvaluateList = currentCtiItem.requesterEvaluateList || [];
-       requesterEvaluateList.push(newEvaluate);
+       const existEvaluate = requesterEvaluateList.find((item) => item.userId === userInfo?.userId);
+       if(existEvaluate){
+          requesterEvaluateList.forEach((item) => {
+            if(item.userId === userInfo?.userId){
+              item.evaluateQuality = values.Q;
+              item.stake = parseFloat((0.1*values.Q).toFixed(2));
+              item.stakeStatus = StakeStatusEnum.STAKING;
+            }
+          })
+          messageApi.success('更新评估成功');
+       }else{
+          requesterEvaluateList.push(newEvaluate);
+          messageApi.success('评估提交成功');
+       }
        let avgEvaluateQuality = requesterEvaluateList.reduce((acc, curr) => acc + curr.evaluateQuality, 0) / requesterEvaluateList.length;
        avgEvaluateQuality = parseFloat(avgEvaluateQuality.toFixed(2));
        requesterEvaluateList.forEach(item => {
           item.avgEvaluateQuality = avgEvaluateQuality;
           if(requesterEvaluateList.length > 3 &&Math.abs(item.evaluateQuality - avgEvaluateQuality) > 0.3*avgEvaluateQuality){
-            item.deductStake = true; //评估质量与平均评估质量相差超过30%，扣除押金
+            item.stakeStatus = StakeStatusEnum.DEDUCTED; //评估质量与平均评估质量相差超过30%，扣除押金
+          }else{
+            item.stakeStatus = StakeStatusEnum.RETURNED; //评估质量与平均评估质量相差不超过30%，返回押金
           }
        });
-       
+      currentCtiItem.avgEvaluateQuality = avgEvaluateQuality;
       currentCtiItem.requesterEvaluateList = requesterEvaluateList;
       updateCtiItem(cti.ctiId, {
         ...currentCtiItem,
@@ -82,9 +101,12 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
       updateOwnerStake(currentCtiItem);
     }
     form.resetFields();
+    closeWindow("evaluate-stake-modal");
+    showLoading();
     setTimeout(() => {
-      closeWindow("evaluate-stake-modal");
-    }, 800);
+      hideLoading();
+
+    }, 500+Math.random()*1000);
   };
 
   return (

@@ -2,7 +2,7 @@ import Paragraph from 'antd/es/skeleton/Paragraph'
 import { UserEvaluateStake } from './user'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
+import { StakeStatusEnum } from './user'
 export interface CtiData {
     id: string
     ctiId: string
@@ -16,7 +16,7 @@ export interface CtiData {
     value: number
     reward: number|0
     stake: number|0
-    deductStake: boolean|false //是否扣除押金
+    stakeStatus: StakeStatusEnum|StakeStatusEnum.UNSTAKED //是否扣除押金
     evaluateStatus: boolean|false //是否评估
     evaluateQuality?: number|0 //评估质量
     avgEvaluateQuality?: number|0 //平均评估质量
@@ -108,7 +108,7 @@ const mockCreateCTI = async (userId: string): Promise<{ cti_info: CtiData }> => 
         value,
         reward:0,
         stake:0,
-        deductStake: false,
+        stakeStatus: StakeStatusEnum.UNSTAKED,
         evaluateStatus: false,
         evaluateQuality: 0,
         avgEvaluateQuality: 0,
@@ -135,7 +135,6 @@ const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
         const value = Math.floor(Math.random() * 100);
         const reward = Math.floor(value * 0.8);
         const stake = Math.floor(value * 0.2);
-
         ctiInfos.push({
           id: (i + 1).toString(),
           ctiId: `20250325${String(i + 1).padStart(6, '0')}`,
@@ -148,7 +147,7 @@ const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
           value,
           reward: i % 2 !== 0 ? reward : 0,
           stake: i % 2 !== 0 ? stake : 0,
-          deductStake: false,
+          stakeStatus: StakeStatusEnum.UNSTAKED,
           evaluateStatus: i % 2 !== 0, // 每2个中有1个未评估
           evaluateQuality: i % 2 !== 0 ? evaluateQualityList[0]: 0,
           avgEvaluateQuality: avgEvaluateQuality,
@@ -156,8 +155,11 @@ const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
             ctiId: `20250325${String(i + 1).padStart(6, '0')}`,
             userId: evalUserList[index],
             evaluateQuality: evaluateQualityList[index],
-            avgEvaluateQuality,
-            deductStake: Math.abs(evaluateQualityList[index] - avgEvaluateQuality) > 0.3 * avgEvaluateQuality
+            avgEvaluateQuality: avgEvaluateQuality,
+            stake: i % 2 !== 0 ? parseFloat((0.1 * evaluateQualityList[index]).toFixed(2)) : 0,
+            stakeStatus: i % 2 !== 0 ?
+            (Math.abs(evaluateQualityList[index] - avgEvaluateQuality) > 0.3 * avgEvaluateQuality ? 
+            StakeStatusEnum.DEDUCTED : StakeStatusEnum.RETURNED) : StakeStatusEnum.UNSTAKED
           }))
         });
       }

@@ -5,12 +5,21 @@ export interface UserInfo {
   username: string
   tokenNumber: number
 }
+
+export enum StakeStatusEnum {
+  UNSTAKED = 0,  // 未抵押
+  STAKING = 1,   // 抵押中
+  RETURNED = 2,   // 已返回
+  DEDUCTED = 3   // 已扣除
+}
+
 export interface UserEvaluateStake {
   ctiId: string
   userId: string
   evaluateQuality: number
   avgEvaluateQuality: number
-  deductStake: boolean
+  stake: number
+  stakeStatus: StakeStatusEnum
 }
 
 
