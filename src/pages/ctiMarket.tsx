@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useWindowManager } from '@/context/WindowManager';
 // import { queryCTIData } from '@/api/cti_market'  // 注释掉原来的API调用
 import { TablePaginationConfig, FilterValue, SorterResult, TableCurrentDataSource } from 'antd/lib/table/interface'
-import { useCtiStore, CtiData } from '@/store/ctiStore'
+import { useCtiStore, CtiData, CtiTypeEnum, CtiIncentiveEnum } from '@/store/ctiStore'
 import { useCtiRequestStore } from '@/store/ctiRequestStore'
 import { useUserStore } from '@/store/user'
 import CtiDetail from '@/components/cti/CtiDetail'
@@ -21,6 +21,8 @@ const CTI_TYPE_MAP = {
   5: "开源情报",
   0: "其他"
 } as { [key: number]: string }
+
+
 const CTI_TAG_MAP = {
   1: "IP",
   2: "domain",
@@ -30,12 +32,15 @@ const CTI_TAG_MAP = {
   0: "others"
 } as { [key: number]: string }
 
+
 // 激励机制映射
 const INCENTIVE_MAP = {
   1: "积分激励",
   2: "三方博弈",
   3: "演化博弈"
 } as { [key: number]: string }
+
+
 
 // Mock数据生成函数
 const generateMockData = (page: number, pageSize: number,mockCtiData:CtiData[]) => {
@@ -149,7 +154,7 @@ export const CtiMarket = () => {
       width: '10%',
       align: 'center',
       render: (text: number) => (
-        <Tag color="blue">{INCENTIVE_MAP[text as keyof typeof INCENTIVE_MAP]}</Tag>
+        <Tag color={text === CtiIncentiveEnum.EVOLUTION ? 'blue': 'green'}>{INCENTIVE_MAP[text as keyof typeof INCENTIVE_MAP]}</Tag>
       )
     },
     {
@@ -157,7 +162,14 @@ export const CtiMarket = () => {
       dataIndex: 'value',
       key: 'value',
       width: '6%',
-      align: 'center'
+      align: 'center',
+      render: (value: number,record:CtiData) => (
+        <Tag color={record.incentiveMechanism === CtiIncentiveEnum.EVOLUTION ? 'blue': 'green'} >
+          <span className={record.incentiveMechanism === CtiIncentiveEnum.EVOLUTION ? '': ''}>
+            {record.incentiveMechanism === CtiIncentiveEnum.EVOLUTION ? 'dynamic':value}
+            </span>
+        </Tag>
+      )
     },
     {
       title: '操作',

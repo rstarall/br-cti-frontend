@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Input, message, Button, List } from 'antd';
 import { useCtiRequestStore } from '@/store/ctiRequestStore';
-import { CtiData } from '@/store/ctiStore';
+import { CtiData, ctiKeyNameMap } from '@/store/ctiStore';
+import { stakeStatusNameMap } from '@/store/user';
 import { CreditCardOutlined, WalletOutlined, KeyOutlined } from '@ant-design/icons';
 
 // 情报类型映射
@@ -109,9 +110,14 @@ const CtiDetail = ({ record }: { record: CtiData }) => {
           renderItem={([key, value]) => (
             <List.Item className="px-6 py-3 hover:bg-gray-50 cursor-pointer">
               <div className="w-full flex justify-between items-center">
-                <div className="font-medium text-gray-700 pl-3">{key}</div>
+                <div className="font-medium text-gray-700 pl-3">{ctiKeyNameMap[key as keyof typeof ctiKeyNameMap]}</div>
                 <div className="text-gray-600 truncate max-w-[70%] pr-3">
-                  {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                  {typeof value === 'object' ? JSON.stringify(value) : 
+                  key === 'stakeStatus' ? stakeStatusNameMap[value as keyof typeof stakeStatusNameMap] :
+                  key === 'incentiveMechanism' ? INCENTIVE_MAP[value as keyof typeof INCENTIVE_MAP] :
+                  key === 'ctiType' ? CTI_TYPE_MAP[value as keyof typeof CTI_TYPE_MAP] :
+                  key == 'evaluateStatus' ? value ? '已评估' : '未评估' :
+                  String(value)}
                 </div>
               </div>
             </List.Item>

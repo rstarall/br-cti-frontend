@@ -13,6 +13,14 @@ export enum StakeStatusEnum {
   DEDUCTED = 3   // 已扣除
 }
 
+export const stakeStatusNameMap = {
+  [StakeStatusEnum.UNSTAKED]: '未抵押',
+  [StakeStatusEnum.STAKING]: '抵押中',
+  [StakeStatusEnum.RETURNED]: '已返回',
+  [StakeStatusEnum.DEDUCTED]: '已扣除'
+}
+
+
 export interface UserEvaluateStake {
   ctiId: string
   userId: string

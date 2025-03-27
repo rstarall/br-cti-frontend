@@ -3,6 +3,44 @@ import { UserEvaluateStake } from './user'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { StakeStatusEnum } from './user'
+
+//CTI类型
+export enum CtiTypeEnum {
+  IP = 1,
+  DOMAIN = 2,
+  URL = 3,
+  HASH = 4,
+  PHISHING = 5,
+  OTHERS = 0
+}
+
+//CTI激励机制
+export enum CtiIncentiveEnum {
+  INTEGRAL = 1,
+  THREE_PARTY = 2,
+  EVOLUTION = 3
+}
+
+export const ctiKeyNameMap = {
+  'id': 'ID',
+  'ctiId': 'CTI ID',
+  'ctiType': 'CTI类型',
+  'userId': '用户ID',
+  'ctiTrafficType': 'CTI流量类型',
+  'tags': '标签',
+  'ctiHash': 'CTI哈希',
+  'createdTime': '创建时间',
+  'incentiveMechanism': '激励机制',
+  'value': '积分',
+  'reward': '奖励',
+  'stake': '押金',
+  'stakeStatus': '押金状态',
+  'evaluateStatus': '评估状态',
+  'evaluateQuality': '评估质量',
+  'avgEvaluateQuality': '平均评估质量',
+  'requesterEvaluateList': '评估列表',
+}
+
 export interface CtiData {
     id: string
     ctiId: string
