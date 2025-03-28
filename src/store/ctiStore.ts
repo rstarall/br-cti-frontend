@@ -1,4 +1,3 @@
-import Paragraph from 'antd/es/skeleton/Paragraph'
 import { UserEvaluateStake } from './user'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -16,8 +15,8 @@ export enum CtiTypeEnum {
 
 //CTI激励机制
 export enum CtiIncentiveEnum {
-  INTEGRAL = 1,
-  THREE_PARTY = 2,
+  // INTEGRAL = 1,
+  // THREE_PARTY = 2,
   EVOLUTION = 3
 }
 
@@ -25,7 +24,7 @@ export const ctiKeyNameMap = {
   'id': 'ID',
   'ctiId': 'CTI ID',
   'ctiType': 'CTI类型',
-  'userId': '用户ID',
+  'walletId': '用户ID',
   'ctiTrafficType': 'CTI流量类型',
   'tags': '标签',
   'ctiHash': 'CTI哈希',
@@ -45,7 +44,7 @@ export interface CtiData {
     id: string
     ctiId: string
     ctiType: number
-    userId: string
+    walletId: string
     ctiTrafficType?: number
     tags: string
     ctiHash: string
@@ -63,7 +62,7 @@ export interface CtiData {
 
 interface CtiState {
   ctiItems: CtiData[]
-  createCti: (userId: string) => Promise<void>
+  createCti: (walletId: string) => Promise<void>
   updateCtiItem: (ctiId: string, updateCti: CtiData) => void
   addCti: (cti: CtiData) => void
   removeCti: (ctiId: string) => void
@@ -75,8 +74,8 @@ export const useCtiStore = create<CtiState>()(
   persist(
     (set) => ({
       ctiItems: [],
-      createCti: async (userId: string) => {
-        const res = await mockCreateCTI(userId);
+      createCti: async (walletId: string) => {
+        const res = await mockCreateCTI(walletId);
         set((state) => ({ ctiItems: [...state.ctiItems, res.cti_info] }));
       },
       updateCtiItem: (ctiId: string, updateCti: CtiData) => set((state) => ({
@@ -130,7 +129,7 @@ const CTI_TAG_MAP = {
 } as { [key: number]: string }
 
 
-const mockCreateCTI = async (userId: string): Promise<{ cti_info: CtiData }> => {
+const mockCreateCTI = async (walletId: string): Promise<{ cti_info: CtiData }> => {
   return new Promise(resolve => {
     setTimeout(() => {
       const value = Math.floor(Math.random() * 100);
@@ -138,11 +137,11 @@ const mockCreateCTI = async (userId: string): Promise<{ cti_info: CtiData }> => 
         id: Date.now().toString(),
         ctiId: `20250325${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`,
         ctiType: Math.floor(Math.random() * 6),
-        userId,
+        walletId,
         tags: CTI_TAG_MAP[Math.floor(Math.random() * 6)],
         ctiHash: 'hash' + Math.random().toString(36).substring(2, 15),
         createdTime: new Date().toISOString(),
-        incentiveMechanism: Math.floor(Math.random() * 3) + 1,
+        incentiveMechanism: CtiIncentiveEnum.EVOLUTION,
         value,
         reward:0,
         stake:0,
@@ -162,10 +161,10 @@ const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
   return new Promise(resolve => {
     setTimeout(() => {
       const ctiInfos: CtiData[] = [];
-      const users = Array.from({length: 10}, (_, i) => `user${i + 1}`);
+      const users = Array.from({length: 10}, (_, i) => `test${i + 1}`);
 
       for (let i = 0; i < 50; i++) {
-        const userId = users[i % 10];
+        const walletId = users[i % 10];
         const ctiType = i % 6; // 根据CTI_TYPE_MAP的key数量
         const evaluateQualityList = Array.from({length: 3}, () => Math.floor(Math.random() * 101));
         const avgEvaluateQuality = parseFloat((evaluateQualityList.reduce((acc, curr) => acc + curr, 0) / evaluateQualityList.length).toFixed(2));
@@ -177,11 +176,11 @@ const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
           id: (i + 1).toString(),
           ctiId: `20250325${String(i + 1).padStart(6, '0')}`,
           ctiType,
-          userId,
+          walletId,
           tags: CTI_TAG_MAP[i % 6], // 使用CTI_TAG_MAP
           ctiHash: 'hash' + Math.random().toString(36).substring(2, 15),
           createdTime: new Date().toISOString(),
-          incentiveMechanism: (i % 3) + 1, // 使用INCENTIVE_MAP
+          incentiveMechanism: CtiIncentiveEnum.EVOLUTION, // 只使用EVOLUTION
           value,
           reward: i % 2 !== 0 ? reward : 0,
           stake: i % 2 !== 0 ? stake : 0,
@@ -191,7 +190,7 @@ const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
           avgEvaluateQuality: avgEvaluateQuality,
           requesterEvaluateList: Array.from([0,1,2]).map((index: number) => ({
             ctiId: `20250325${String(i + 1).padStart(6, '0')}`,
-            userId: evalUserList[index],
+            walletId: evalUserList[index],
             evaluateQuality: evaluateQualityList[index],
             avgEvaluateQuality: avgEvaluateQuality,
             stake: i % 2 !== 0 ? parseFloat((0.1 * evaluateQualityList[index]).toFixed(2)) : 0,

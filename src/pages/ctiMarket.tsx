@@ -255,7 +255,7 @@ export const CtiMarket = () => {
   }
 
   const handleCtiRequest = (cti: CtiData) => {
-    if(cti.userId === userInfo?.userId){
+    if(cti.walletId === userInfo?.walletId){
       messageApi.open({
         type: 'error',
         content: '您是该情报提供者，不能加入交易清单',
@@ -269,10 +269,12 @@ export const CtiMarket = () => {
     });
   }
 
-  useEffect(() => {
+   useEffect(() => {
     //初始化
     initializeCti()
-    fetchData()
+
+    fetchData();
+  
   }, [])
 
   return (

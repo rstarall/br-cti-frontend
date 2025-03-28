@@ -10,7 +10,6 @@ export const TransactionWindow = () => {
   const { userInfo,initializeUserInfo } = useUserStore();
   const { ctiItems } = useCtiStore();
   const { ctiRequestItems } = useCtiRequestStore();
-  const userId = userInfo?.userId;
   const [stats, setStats] = useState<CtiTradeStats>({
     provide: 0,
     trade: 0,
@@ -18,17 +17,19 @@ export const TransactionWindow = () => {
     reward: 0,
   });
   useEffect(() => {
-    const currentUserItems = ctiItems.filter((item) => item.userId === userId);
+    initializeUserInfo();
+  }, []);
+  
+  useEffect(() => {
+    const currentUserItems = ctiItems.filter((item) => item.walletId === userInfo?.walletId);
     setStats({
       provide: currentUserItems.length,
       trade: ctiRequestItems.length,
       stake: parseFloat(currentUserItems.reduce((acc, curr) => acc + curr.stake, 0).toFixed(2)),
       reward: parseFloat(currentUserItems.reduce((acc, curr) => acc + curr.reward, 0).toFixed(2)),
     });
-  }, [ctiItems, ctiRequestItems, userId]);
-  useEffect(() => {
-    initializeUserInfo();
-  }, []);
+  }, [ctiItems, ctiRequestItems, userInfo]);
+  
   return (
     <div className="w-full h-full">
       <TransactionHeader userInfo={userInfo as UserInfo} stats={stats} />

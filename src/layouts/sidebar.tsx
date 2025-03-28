@@ -35,8 +35,8 @@ const Sidebar: React.FC = () => {
       icon: <WalletOutlined />,
       href: "/client/wallet",
       windowType: "frameless",
-      width: "350px",
-      height: "500px",
+      width: "340px",
+      height: "550px",
       domContext: <WalletWindow />,
       windowId: "wallet-window"
     },

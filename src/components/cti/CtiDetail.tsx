@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input, message, Button, List } from 'antd';
 import { useCtiRequestStore } from '@/store/ctiRequestStore';
 import { CtiData, ctiKeyNameMap } from '@/store/ctiStore';
-import { stakeStatusNameMap } from '@/store/user';
+import { stakeStatusNameMap,useUserStore } from '@/store/user';
 import { CreditCardOutlined, WalletOutlined, KeyOutlined } from '@ant-design/icons';
 
 // 情报类型映射
@@ -38,6 +38,7 @@ const CtiDetail = ({ record }: { record: CtiData }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [incentiveEvents, setIncentiveEvents] = useState<IncentiveEvent[]>([]);
   const { addToCtiRequest } = useCtiRequestStore();
+  const { userInfo } = useUserStore();
 
   useEffect(() => {
     setCtiData(record);
@@ -90,7 +91,7 @@ const CtiDetail = ({ record }: { record: CtiData }) => {
             </div>
             <div className="flex items-center">
               <WalletOutlined className="mr-2 text-sky-800" />
-              <span>我的积分: 0</span>
+              <span>我的积分: {userInfo?.tokenNumber}</span>
             </div>
           </div>
           <Button 

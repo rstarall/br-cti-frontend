@@ -3,13 +3,13 @@ import { useGlobalStore } from "@/store/global";
 const { clientServerHost, blockchainServerHost } = useGlobalStore.getState();
 
 // 用户相关接口
-export const getUserCTIStatistics = async (userId: string) => {
+export const getUserCTIStatistics = async (walletId: string) => {
   const response = await fetch(`${clientServerHost}/user/getUserCTIStatistics`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ user_id: userId }),
+    body: JSON.stringify({ user_id: walletId }),
   });
   const data = await response.json();
   if (data.code === 200) {
@@ -18,13 +18,13 @@ export const getUserCTIStatistics = async (userId: string) => {
   throw new Error('获取用户CTI统计数据失败');
 };
 
-export const getUserInfo = async (userId: string) => {
+export const getUserInfo = async (walletId: string) => {
   const response = await fetch(`${blockchainServerHost}/user/queryUserDetailInfo`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ user_id: userId }),
+    body: JSON.stringify({ user_id: walletId }),
   });
   const data = await response.json();
   if (data.result) {

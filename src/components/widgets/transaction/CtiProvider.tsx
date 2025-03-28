@@ -20,9 +20,9 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
   const { ctiItems ,createCti} = useCtiStore();
   const [dataSource, setDataSource] = useState<CtiData[]>([]);
   useEffect(() => {
-    const ownerCtiItems = ctiItems.filter((item) => item.userId === userInfo?.userId);
+    const ownerCtiItems = ctiItems.filter((item) => item.walletId === userInfo?.walletId);
     setDataSource(ownerCtiItems);
-  }, [ctiItems]);
+  }, [ctiItems,userInfo]);
   const columns = [
     {
       title: 'ID',
@@ -106,13 +106,13 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
     if(info.file.status === 'done'){
       
       messageApi.success('上传成功');
-      createCti(userInfo?.userId);
+      createCti(userInfo?.walletId);
     }
     if(info.file.status === 'error'){
       //模拟失败也显示上传成功
       info.file.status = 'done';
       messageApi.success('上传成功');
-      createCti(userInfo?.userId);
+      createCti(userInfo?.walletId);
     }
   };
 
@@ -136,9 +136,9 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
     console.log("id", record.ctiId);
     openModalWindow(
       '评估',
-      <EvaluateStakeModal cti={record} isOwner={record.userId === userInfo?.userId} />,
+      <EvaluateStakeModal cti={record} isOwner={record.walletId === userInfo?.walletId} />,
       '520px',
-      (record.userId == userInfo?.userId) ? '470px' : '420px',
+      (record.walletId == userInfo?.walletId) ? '470px' : '420px',
       "evaluate-stake-modal",
       false
     )

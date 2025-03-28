@@ -14,7 +14,6 @@ export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
   const { openWindow, openModalWindow } = useWindowManager();
   const { messageApi } = useMessage();
   const [loading, setLoading] = useState(false);
-
   const columns: ColumnsType<CtiData> = [
     {
       title: 'ID',
@@ -37,7 +36,7 @@ export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
       width: '10%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => {
-        const exitUserId = record.requesterEvaluateList?.some((evaluate) => evaluate.userId === userInfo?.userId);
+        const exitUserId = record.requesterEvaluateList?.some((evaluate) => evaluate.walletId === userInfo?.walletId);
         return <Tag color={exitUserId ? 'green' : 'orange'}>
           {exitUserId ? '已评估' : '未评估'}
         </Tag>
@@ -50,7 +49,7 @@ export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
       width: '10%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => {
-        const evaluateItem = record.requesterEvaluateList?.find((evaluate) => evaluate.userId === userInfo?.userId);
+        const evaluateItem = record.requesterEvaluateList?.find((evaluate) => evaluate.walletId === userInfo?.walletId);
         return <Tag color={evaluateItem?.evaluateQuality ? 'green' : 'orange'}>
           {evaluateItem?.evaluateQuality ? evaluateItem?.evaluateQuality : 0}
         </Tag>
@@ -63,7 +62,7 @@ export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
       width: '10%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => {
-        const evaluateItem = record.requesterEvaluateList?.find((evaluate) => evaluate.userId === userInfo?.userId);
+        const evaluateItem = record.requesterEvaluateList?.find((evaluate) => evaluate.walletId === userInfo?.walletId);
         return <Tag color={evaluateItem?.stakeStatus === StakeStatusEnum.DEDUCTED ? 'red' :
           (evaluateItem?.stakeStatus === StakeStatusEnum.STAKING ? 'orange' : (
            evaluateItem?.stakeStatus === StakeStatusEnum.RETURNED ? 'green' : 'orange'))}>
@@ -115,9 +114,9 @@ export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
     console.log("id", record.ctiId);
     openModalWindow(
       '评估',
-      <EvaluateStakeModal cti={record} isOwner={record.userId === userInfo?.userId} />,
+      <EvaluateStakeModal cti={record} isOwner={record.walletId === userInfo?.walletId} />,
       '520px',
-      (record.userId == userInfo?.userId) ? '470px' : '390px',
+      (record.walletId == userInfo?.walletId) ? '470px' : '390px',
       "evaluate-stake-modal",
       false
     )
