@@ -44,6 +44,16 @@ export const WalletRegisterWindow = () => {
     // 组合成完整地址
     return `0x${randomHex}${timeHex}`.toLowerCase();
   };
+  const generateCryptoKey = (): string => {
+    // 生成16位大写字母和数字组合的密钥
+    const chars = 'ABCDEF0123456789';
+    let key = '';
+    for (let i = 0; i < 16; i++) {
+      key += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return key;
+  }
+
   const handleSavePassword = () => {
     if (!password || !confirmPassword) {
       messageApi.error('密码不能为空');
@@ -82,6 +92,10 @@ export const WalletRegisterWindow = () => {
       userName: accountName,
       tokenNumber: 100,
       transactions: [],
+      ownerCtiList: [],
+      extraInfo: {
+        cryptoKey: generateCryptoKey()
+      }
     }
     updateUserInfoDic(userInfo.walletId,userInfo);
     setUserInfo(userInfo);
@@ -90,8 +104,7 @@ export const WalletRegisterWindow = () => {
         closeWindow('wallet-register-window');
         hideLoading();
 
-        // 刷新钱包
-        handleRefreshWallet();
+       messageApi.success('创建钱包成功');
     }, 300+Math.random()*1000);
     
   };

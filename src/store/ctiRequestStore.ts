@@ -24,7 +24,7 @@ export const useCtiRequestStore = create<CtiRequestState>()(
           // 检查是否已经存在
           const exists = state.ctiRequestItems.some(item => item.ctiId === cti.ctiId)
           if (!exists) {
-            return { ctiRequestItems: [...state.ctiRequestItems, cti] }
+            return { ctiRequestItems: [cti,...state.ctiRequestItems] }
           }
           return state
         }),

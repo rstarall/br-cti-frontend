@@ -1,11 +1,18 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { CtiData } from './ctiStore'
 
 export interface UserInfo {
   walletId: string
   userName: string
   tokenNumber: number
   transactions: Transaction[]
+  extraInfo: ExtraInfo
+  ownerCtiList: CtiData[]
+}
+
+export interface ExtraInfo {
+  cryptoKey: string
 }
 
 export interface Transaction {
@@ -57,6 +64,9 @@ interface UserState {
   initializeUserInfo: () => void
 }
 
+
+
+
 export const useUserStore = create<UserState>()(
   persist(
     (set) => ({
@@ -64,7 +74,10 @@ export const useUserStore = create<UserState>()(
         walletId: '',
         userName: '',
         tokenNumber: 0,
-        transactions: []
+        transactions: [],
+        extraInfo: {
+          cryptoKey: ''
+        }
       },
       userInfoDic: {},
       setUserInfo: (info) => {
@@ -141,13 +154,19 @@ export const useUserStore = create<UserState>()(
             userName: 'user1',
             tokenNumber: 100,
             walletId: '0xacb123abc01',
-            transactions: []
+            transactions: [],
+            extraInfo: {
+              cryptoKey: 'ACBF256789012345'
+            }
           }
           const platformUserInfo = {
             userName: 'platform',
             tokenNumber: 1000,
             walletId: 'platform',
-            transactions: []
+            transactions: [],
+            extraInfo: {
+              cryptoKey: 'ACBF2567890FC2345'
+            }
           }
           return {
             userInfo: userInfo,

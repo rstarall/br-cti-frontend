@@ -19,16 +19,16 @@ const Sidebar: React.FC = () => {
   const { openWindow, openFramelessWindow } = useWindowManager();
 
   const menuItems = [
-    {
-      action: "network",
-      title: "网络连接",
-      icon: <KubernetesOutlined />,
-      href: "/client/network",
-      windowType: "normal",
-      width: "350px",
-      height: "500px",
-      domContext: <div>网络连接组件</div>
-    },
+    // {
+    //   action: "network",
+    //   title: "网络连接",
+    //   icon: <KubernetesOutlined />,
+    //   href: "/client/network",
+    //   windowType: "normal",
+    //   width: "350px",
+    //   height: "500px",
+    //   domContext: <div>网络连接组件</div>
+    // },
     {
       action: "wallet",
       title: "账户钱包",
@@ -46,38 +46,38 @@ const Sidebar: React.FC = () => {
         icon: <TransactionOutlined />,
         href: "/client/incentive",
         windowType: "normal",
-        width: "850px",
+        width: "950px",
         height: "600px",
         domContext: <TransactionWindow />
     },
-    {
-      action: "local-data",
-      title: "本地数据",
-      icon: <DatabaseOutlined />,
-      href: "/client/local-data",
-      windowType: "normal",
-      width: "800px",
-      height: "500px",
-      domContext: <div>本地数据组件</div>
-    },
-    {
-      action: "ml-model",
-      title: "模型管理",
-      icon: <CodepenOutlined />,
-      href: "/client/ml-model",
-      windowType: "normal",
-      width: "800px",
-      height: "500px",
-      domContext: <div>模型管理组件</div>
-    },
-    {
-      action: "dashboard",
-      title: "大屏展示",
-      icon: <FundViewOutlined />,
-      href: "http://localhost:8081/",
-      windowType: "external",
-      domContext: null
-    }
+    // {
+    //   action: "local-data",
+    //   title: "本地数据",
+    //   icon: <DatabaseOutlined />,
+    //   href: "/client/local-data",
+    //   windowType: "normal",
+    //   width: "800px",
+    //   height: "500px",
+    //   domContext: <div>本地数据组件</div>
+    // },
+    // {
+    //   action: "ml-model",
+    //   title: "模型管理",
+    //   icon: <CodepenOutlined />,
+    //   href: "/client/ml-model",
+    //   windowType: "normal",
+    //   width: "800px",
+    //   height: "500px",
+    //   domContext: <div>模型管理组件</div>
+    // },
+    // {
+    //   action: "dashboard",
+    //   title: "大屏展示",
+    //   icon: <FundViewOutlined />,
+    //   href: "http://localhost:8081/",
+    //   windowType: "external",
+    //   domContext: null
+    // }
   ] as MenuItem[];
 
   const handleLinkClick = (action: string, title: string, windowType: string, width: string, height: string, domContext: React.ReactNode, windowId?: string) => {

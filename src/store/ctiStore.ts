@@ -2,7 +2,7 @@ import { UserEvaluateStake } from './user'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { StakeStatusEnum } from './user'
-
+import { UserInfo } from './user'
 //CTI类型
 export enum CtiTypeEnum {
   IP = 1,
@@ -28,6 +28,9 @@ export const ctiKeyNameMap = {
   'ctiTrafficType': 'CTI流量类型',
   'tags': '标签',
   'ctiHash': 'CTI哈希',
+  'ipfsAddress': 'IPFS地址',
+  'cryptoKey': '密钥',
+  'onChain': '上链状态',
   'createdTime': '创建时间',
   'incentiveMechanism': '激励机制',
   'value': '积分',
@@ -37,6 +40,7 @@ export const ctiKeyNameMap = {
   'evaluateStatus': '评估状态',
   'evaluateQuality': '评估质量',
   'avgEvaluateQuality': '平均评估质量',
+  'paymentUserList': '购买用户列表',
   'requesterEvaluateList': '评估列表',
 }
 
@@ -48,6 +52,10 @@ export interface CtiData {
     ctiTrafficType?: number
     tags: string
     ctiHash: string
+    ipfsAddress: string
+    onChain: boolean|false //是否上链
+    cryptoKey: string
+    data: string
     createdTime: string
     incentiveMechanism: number
     value: number
@@ -57,12 +65,13 @@ export interface CtiData {
     evaluateStatus: boolean|false //是否评估
     evaluateQuality?: number|0 //评估质量
     avgEvaluateQuality?: number|0 //平均评估质量
+    paymentUserList: string[] //购买用户列表
     requesterEvaluateList?: UserEvaluateStake[]|[] //评估列表
 }
 
 interface CtiState {
   ctiItems: CtiData[]
-  createCti: (walletId: string) => Promise<void>
+  createCti: (walletId: string,userInfo: UserInfo) => Promise<void>
   updateCtiItem: (ctiId: string, updateCti: CtiData) => void
   addCti: (cti: CtiData) => void
   removeCti: (ctiId: string) => void
@@ -74,9 +83,13 @@ export const useCtiStore = create<CtiState>()(
   persist(
     (set) => ({
       ctiItems: [],
-      createCti: async (walletId: string) => {
-        const res = await mockCreateCTI(walletId);
-        set((state) => ({ ctiItems: [...state.ctiItems, res.cti_info] }));
+      createCti: async (walletId: string,userInfo: UserInfo) => {
+        set((state) => {
+          const info = mockCreateCTI(walletId,userInfo,state.ctiItems.length+1);
+          return {
+            ctiItems: [info,...state.ctiItems]
+          }   
+        });
       },
       updateCtiItem: (ctiId: string, updateCti: CtiData) => set((state) => ({
         ctiItems: state.ctiItems.map(item => item.ctiId === ctiId ? updateCti : item)
@@ -95,11 +108,11 @@ export const useCtiStore = create<CtiState>()(
         })),
       clearCti: () => set({ ctiItems: [] }),
       initializeCti: async () => {
-        const storedItems = localStorage.getItem('cti-store');
-        if (!storedItems || JSON.parse(storedItems).ctiItems.length === 0) {
-          const res = await mockFetchUserCTI();
-          set({ ctiItems: res.cti_infos });
-        }
+        // const storedItems = localStorage.getItem('cti-store');
+        // if (!storedItems || JSON.parse(storedItems).ctiItems.length === 0) {
+        //   // const res = await mockFetchUserCTI();
+        //   // set({ ctiItems: res.cti_infos });
+        // }
       }
     }),
     {
@@ -128,18 +141,29 @@ const CTI_TAG_MAP = {
   0: "others"
 } as { [key: number]: string }
 
+const generateHashKey = (): string => {
+  // 生成16位大写字母和数字组合的密钥
+  const chars = 'ABCDEF0123456789';
+  let key = '';
+  for (let i = 0; i < 16; i++) {
+    key += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return key;
+}
 
-const mockCreateCTI = async (walletId: string): Promise<{ cti_info: CtiData }> => {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      const value = Math.floor(Math.random() * 100);
+const mockCreateCTI = (walletId: string,userInfo: UserInfo,currentCtiNum: number): CtiData => {
+    const value = Math.floor(Math.random() * 100);
       const ctiInfo: CtiData = {
-        id: Date.now().toString(),
+        id: currentCtiNum.toString()+1,
         ctiId: `20250325${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`,
         ctiType: Math.floor(Math.random() * 6),
         walletId,
         tags: CTI_TAG_MAP[Math.floor(Math.random() * 6)],
         ctiHash: 'hash' + Math.random().toString(36).substring(2, 15),
+        ipfsAddress: generateHashKey(),
+        cryptoKey: userInfo.extraInfo?.cryptoKey||generateHashKey(),
+        onChain: false,
+        data: '{ this is an redos cti data }',
         createdTime: new Date().toISOString(),
         incentiveMechanism: CtiIncentiveEnum.EVOLUTION,
         value,
@@ -149,12 +173,11 @@ const mockCreateCTI = async (walletId: string): Promise<{ cti_info: CtiData }> =
         evaluateStatus: false,
         evaluateQuality: 0,
         avgEvaluateQuality: 0,
+        paymentUserList: [],
         requesterEvaluateList: []
       }
 
-      resolve({ cti_info: ctiInfo });
-    }, 500);
-  });
+      return ctiInfo;
 }
 // 模拟获取用户提供的情报数据
 const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
@@ -178,7 +201,11 @@ const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
           ctiType,
           walletId,
           tags: CTI_TAG_MAP[i % 6], // 使用CTI_TAG_MAP
+          ipfsAddress: generateHashKey(),
+          cryptoKey: generateHashKey(),
+          onChain: false,
           ctiHash: 'hash' + Math.random().toString(36).substring(2, 15),
+          data: '{ this is an redos cti data }',
           createdTime: new Date().toISOString(),
           incentiveMechanism: CtiIncentiveEnum.EVOLUTION, // 只使用EVOLUTION
           value,
@@ -188,6 +215,7 @@ const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {
           evaluateStatus: i % 2 !== 0, // 每2个中有1个未评估
           evaluateQuality: i % 2 !== 0 ? evaluateQualityList[0]: 0,
           avgEvaluateQuality: avgEvaluateQuality,
+          paymentUserList: evalUserList,
           requesterEvaluateList: Array.from([0,1,2]).map((index: number) => ({
             ctiId: `20250325${String(i + 1).padStart(6, '0')}`,
             walletId: evalUserList[index],

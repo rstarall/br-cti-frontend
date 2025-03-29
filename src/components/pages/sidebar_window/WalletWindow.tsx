@@ -10,7 +10,7 @@ import { TransactionTypeEnum } from "@/store/user";
 
 export const WalletWindow = () => {
   const { userInfo, userInfoDic, setUserInfo,initializeUserInfo } = useUserStore();
-  const {openFramelessWindow,closeWindow} = useWindowManager();
+  const {openFramelessWindow, closeWindow, openWindow} = useWindowManager();
   const {messageApi} = useMessage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showMenu, setShowMenu] = useState(false);
@@ -51,6 +51,22 @@ export const WalletWindow = () => {
     }
   }
 
+  const handleUserInfo = () => {
+    openWindow(
+      "我的密钥", 
+      <div className="flex flex-col p-2 space-y-2">
+        <div className="text-center">{userInfo?.extraInfo?.cryptoKey}</div>
+        <div className="text-center bg-gray-100 py-2 rounded-md cursor-pointer" onClick={() => {
+          navigator.clipboard.writeText(userInfo?.extraInfo?.cryptoKey || '');
+          messageApi.success("复制成功")
+        }}>复制</div>
+      </div>, 
+      "200px", 
+      "140px", 
+      "user-info-window",
+      false
+    );
+  }
   return (
     <div className="flex flex-col h-full bg-white" onClick={() => setShowMenu(false)}>
       {/* 头部 */}
@@ -84,6 +100,11 @@ export const WalletWindow = () => {
               }}>注册新账号</div>
               <div className="py-2 px-2 hover:bg-gray-100 text-sm cursor-pointer"
               onClick={handleUserChange}>切换账号</div>
+              <div className="py-2 px-2 hover:bg-gray-100 text-sm cursor-pointer"
+              onClick={() => {
+                setShowMenu(false);
+                handleUserInfo();
+              }}>我的密钥</div>
               <div className="py-2 px-2 hover:bg-gray-100 text-sm cursor-pointer text-red-500"
               onClick={() => {
                 setShowMenu(false);
@@ -123,7 +144,7 @@ export const WalletWindow = () => {
             {icon: "↓", text: "转入"},
             {icon: "↑", text: "转出"},
             {icon: "📈", text: "收益"},
-            {icon: "💎", text: "CTI资产"}
+            {icon: "💎", text: "资产"}
           ].map((item, i) => (
             <div key={i} className="flex flex-col items-center">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-1">

@@ -1,8 +1,8 @@
-import { Upload, Table, Tag, message } from 'antd';
+import { Upload, Table, Tag, message, Button } from 'antd';
 import { UploadChangeParam, UploadFile } from 'antd/es/upload/interface';
 import { useEffect, useState } from 'react';
 import { useGlobalStore } from '@/store/global';
-import { UserInfo } from '@/store/user';
+import { useUserStore } from '@/store/user';
 import { CloudUploadOutlined } from '@ant-design/icons';
 import { useWindowManager } from '@/context/WindowManager';
 import CtiDetail from '@/components/cti/CtiDetail';
@@ -10,33 +10,55 @@ import EvaluateStakeModal from './EvaluateStakeModal';
 import { useCtiStore, CtiData } from '@/store/ctiStore';
 import { useMessage } from '@/context/MessageProvider';
 import { StakeStatusEnum } from '@/store/user';
+import { RowSelectMethod } from 'antd/es/table/interface';
 const { Dragger } = Upload;
 
-
-export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
+export const CtiProvider = () => {
   const { clientServerHost } = useGlobalStore();
   const { openWindow, openModalWindow } = useWindowManager();
   const { messageApi } = useMessage();
-  const { ctiItems ,createCti} = useCtiStore();
+  const { ctiItems ,createCti,updateCtiItem} = useCtiStore();
+  const { userInfo } = useUserStore();
   const [dataSource, setDataSource] = useState<CtiData[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<CtiData[]>([]);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    const ownerCtiItems = ctiItems.filter((item) => item.walletId === userInfo?.walletId);
+    const ownerCtiItems = ctiItems.filter((item) => {
+      return (item.walletId === userInfo?.walletId)&&(!item.onChain)
+    });
     setDataSource(ownerCtiItems);
   }, [ctiItems,userInfo]);
+
   const columns = [
     {
       title: 'ID',
       dataIndex: 'ctiId',
       key: 'ctiId',
-      width: '10%',
-      align: 'center' as const
+      width: '16%',
+      align: 'center' as const,
     },
     {
-      title: '类型',
-      dataIndex: 'tags',
-      key: 'tags',
-      width: '10%',
-      align: 'center' as const
+      title: 'IPFS地址',
+      dataIndex: 'ipfsAddress',
+      key: 'ipfsAddress', 
+      width: '15%',
+      align: 'center' as const,
+    },
+    {
+      title: '密钥',
+      dataIndex: 'cryptoKey',
+      key: 'cryptoKey', 
+      width: '15%',
+      align: 'center' as const,
+    },
+    {
+      title: '评估分数',
+      dataIndex: 'evaluateQuality',
+      key: 'evaluateQuality',
+      width: '8%',
+      align: 'center' as const,
     },
     {
       title: '状态',
@@ -51,17 +73,10 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
       )
     },
     {
-      title: '评估分数',
-      dataIndex: 'evaluateQuality',
-      key: 'evaluateQuality',
-      width: '10%',
-      align: 'center' as const
-    },
-    {
       title: '抵押积分',
       dataIndex: 'stake',
       key: 'stake',
-      width: '10%',
+      width: '12%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => (
         <Tag color={record.stakeStatus === StakeStatusEnum.UNSTAKED ? 'orange' : 
@@ -74,13 +89,6 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
       )
     },
     {
-      title: '收益积分',
-      dataIndex: 'reward',
-      key: 'reward',
-      width: '10%',
-      align: 'center' as const
-    },
-    {
       title: '操作',
       key: 'action',
       width: '20%',
@@ -90,9 +98,13 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
           <div className="bg-sky-800 text-white px-3 py-1 rounded hover:bg-sky-600 transition-colors shadow-sm" onClick={() => handleDetail(record)}>
             详情
           </div>
-          <div className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition-colors shadow-sm" onClick={() => handleEvaluate(record)}>
+          {!record.evaluateStatus&&<div className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition-colors shadow-sm" onClick={() => handleEvaluate(record)}>
             评估
-          </div>
+          </div>}
+          {record.evaluateStatus&&<div className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors shadow-sm" onClick={() => handleOnChain(record)}>
+            上链
+          </div>}
+
         </div>
       )
     }
@@ -104,15 +116,13 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
       console.log(file);
     }
     if(info.file.status === 'done'){
-      
       messageApi.success('上传成功');
-      createCti(userInfo?.walletId);
+      createCti(userInfo?.walletId,userInfo);
     }
     if(info.file.status === 'error'){
-      //模拟失败也显示上传成功
       info.file.status = 'done';
       messageApi.success('上传成功');
-      createCti(userInfo?.walletId);
+      createCti(userInfo?.walletId,userInfo);
     }
   };
 
@@ -138,19 +148,54 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
       '评估',
       <EvaluateStakeModal cti={record} isOwner={record.walletId === userInfo?.walletId} />,
       '520px',
-      (record.walletId == userInfo?.walletId) ? '470px' : '420px',
+      (record.walletId == userInfo?.walletId) ? '570px' : '530px',
       "evaluate-stake-modal",
       false
     )
   }
 
-  const fetchUserProviderCtiData = async () => {
+  const handleOnChain = (record?: CtiData) => {
+    setLoading(true);
+     //单个上链
+     if(record){
+      // 上链操作
+      setTimeout(() => {
+        setSelectedRowKeys(selectedRowKeys.filter((item) => item !== record.ctiId));
+        const newCti = {...record,onChain:true};
+        updateCtiItem(record.ctiId,newCti);
+        setLoading(false);
+        messageApi.success('上链成功');
+      }, 1000);
+     }else{
+      //批量上链
+      // 上链操作
+      setTimeout(() => {
+        selectedRows.map((item) => {
+          if(item.ctiId){
+            updateCtiItem(item.ctiId,{...item,onChain:true});
+          }
+        });
+        setSelectedRowKeys([]);
+        setSelectedRows([]);
+        setLoading(false);
+      }, 1000);
+    }
+  };
 
-  }
+  const onSelectChange = (selectedRowKeys: string[],selectedRows: CtiData[],info: { type: RowSelectMethod }) => {
+    console.log('selectedRowKeys changed: ', selectedRowKeys);
+    setSelectedRowKeys(selectedRowKeys);
+    setSelectedRows(selectedRows);
+  };
 
-  useEffect(() => {
-    fetchUserProviderCtiData();
-  }, []);
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+    type: 'checkbox' as const,
+    hideSelectAll: false
+  };
+
+  const hasSelected = selectedRowKeys.length > 0;
 
   return (
     <div className="flex flex-col space-y-4 p-2">
@@ -162,7 +207,7 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
         name="file"
         multiple={true}
         action={`${clientServerHost}/data/upload_file`}
-        className="border-sky-800 hover:border-sky-600 transition-colors"
+        className="border-sky-800 hover:border-sky-600 transition-colors mb-3"
         onChange={handleUpload}
       >
         <p className="ant-upload-drag-icon">
@@ -176,14 +221,29 @@ export const CtiProvider = ({ userInfo }: { userInfo: UserInfo }) => {
         </p>
       </Dragger>
 
-      <Table
-        columns={columns}
-        dataSource={dataSource}
-        bordered
-        pagination={false}
-        className="rounded-lg shadow-sm mt-3"
-        rowClassName="hover:bg-gray-50 transition-colors"
-      />
+      <div className="mt-3 border-t-2 border-sky-800 flex flex-col gap-3">
+        <div className="flex justify-start items-center h-full pt-2">
+          <Button type="primary" onClick={() => handleOnChain()} disabled={!hasSelected} loading={loading}>
+            上链
+          </Button>
+          <span className="text-gray-600 px-3">
+            {hasSelected ? `已选择 ${selectedRowKeys.length} 项` : null}
+          </span>
+        </div>
+        <Table
+          rowSelection={rowSelection}
+          columns={columns}
+          dataSource={dataSource}
+          rowKey="ctiId"
+          bordered
+          pagination={false}
+          className="rounded-lg shadow-sm"
+          rowClassName="hover:bg-gray-50 transition-colors"
+          // scroll={{ x: 'max-content' }}
+        />
+        
+      </div>
+      
     </div>
   );
 };

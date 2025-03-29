@@ -200,6 +200,11 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
       <Form.Item label="情报ID" name="ctiId">
         <Input disabled defaultValue={cti.ctiId} />
       </Form.Item>
+      <Form.Item label="情报内容" name="data">
+        <div className='bg-gray-100 p-2 rounded-md'>
+          {cti.data||'{ this is an redos cti data }'} 
+        </div>
+      </Form.Item>
 
       <Form.Item 
         label="质量 Q (0-100)" 

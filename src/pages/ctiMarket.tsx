@@ -91,9 +91,13 @@ export const CtiMarket = () => {
   const [filters, setFilters] = useState({
     type: -1,
     incentive: 1,
-    sort: 'create_time'
+    sort: 'createdTime'
   })
   const { addToCtiRequest } = useCtiRequestStore()
+
+   useEffect(() => {
+     setData(ctiItems.sort((a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime()))
+   }, [ctiItems])
 
   const columns = [
     {
@@ -101,7 +105,14 @@ export const CtiMarket = () => {
       dataIndex: 'id',
       key: 'id',
       width: '5%',
-      align: 'center'
+      align: 'center',
+      render: (text: string) => 
+      {
+        // const index = data.findIndex(item => item.id === text)
+        // return <span>{index+1}</span>
+        return <span>{text}</span>
+      }
+      
     },
     {
       title: 'CTI编号',
@@ -110,23 +121,23 @@ export const CtiMarket = () => {
       width: '15%',
       align: 'center'
     },
-    {
-      title: '情报类型',
-      dataIndex: 'ctiType',
-      key: 'ctiType',
-      width: '10%',
-      align: 'center',
-      render: (text: string, record: CtiData) => (
-        <span>{CTI_TYPE_MAP[record.ctiType] || text}</span>
-      )
-    },
-    {
-      title: '标签',
-      dataIndex: 'tags',
-      key: 'tags',
-      width: '8%',
-      align: 'center'
-    },
+    // {
+    //   title: '情报类型',
+    //   dataIndex: 'ctiType',
+    //   key: 'ctiType',
+    //   width: '10%',
+    //   align: 'center',
+    //   render: (text: string, record: CtiData) => (
+    //     <span>{CTI_TYPE_MAP[record.ctiType] || text}</span>
+    //   )
+    // },
+    // {
+    //   title: '标签',
+    //   dataIndex: 'tags',
+    //   key: 'tags',
+    //   width: '8%',
+    //   align: 'center'
+    // },
     {
       title: 'HASH',
       dataIndex: 'ctiHash',
@@ -178,7 +189,7 @@ export const CtiMarket = () => {
       align: 'center',
       render: (_: unknown, record: CtiData) => (
         <div className="flex flex-col space-y-3 h-full text-white px-[12%]">
-          <div className='bg-sky-800 rounded-sm py-[2px] cursor-pointer shadow-md' onClick={() => handleDetail(record)}>情报详情</div>
+          {/* <div className='bg-sky-800 rounded-sm py-[2px] cursor-pointer shadow-md' onClick={() => handleDetail(record)}>情报详情</div> */}
           <div className='bg-sky-800 rounded-sm py-[2px] cursor-pointer shadow-md' onClick={() => handleCtiRequest(record)}>加入清单</div>
         </div>
       )
@@ -196,7 +207,7 @@ export const CtiMarket = () => {
         mockCtiData:ctiItems,
         ...params
       }) as { cti_infos: CtiData[], total: number };
-      setData(response.cti_infos)
+      setData(response.cti_infos.sort((a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime()))
       setPagination(prev => ({
         ...prev,
         total: response.total
@@ -293,7 +304,7 @@ export const CtiMarket = () => {
       </div>
 
       <div className="mb-4 space-y-4">
-        <div className="flex items-center">
+        {/* <div className="flex items-center">
           <span className="mr-2">分类:</span>
           <Select
             defaultValue={-1}
@@ -305,9 +316,9 @@ export const CtiMarket = () => {
               <Option key={key} value={key}>{value}</Option>
             ))}
           </Select>
-        </div>
+        </div> */}
 
-        <div className="flex items-center">
+        {/* <div className="flex items-center">
           <span className="mr-2">激励机制:</span>
           <Select
             defaultValue={-1}
@@ -319,7 +330,7 @@ export const CtiMarket = () => {
               <Option key={key} value={key}>{value}</Option>
             ))}
           </Select>
-        </div>
+        </div> */}
 
         <div className="flex items-center">
           <span className="mr-2">排序:</span>

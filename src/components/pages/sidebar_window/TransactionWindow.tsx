@@ -6,6 +6,8 @@ import { useCtiStore } from '@/store/ctiStore';
 import { useCtiRequestStore } from '@/store/ctiRequestStore';
 import { CtiTradeStats } from '@/components/widgets/transaction/TransactionHeader';
 import { useEffect, useState } from 'react';
+import { CtiOnchain } from '@/components/widgets/transaction/CtiOnchain';
+import { CtiPurchased } from '@/components/widgets/transaction/CtiPurchased';
 export const TransactionWindow = () => {
   const { userInfo,initializeUserInfo } = useUserStore();
   const { ctiItems } = useCtiStore();
@@ -33,8 +35,10 @@ export const TransactionWindow = () => {
   return (
     <div className="w-full h-full">
       <TransactionHeader userInfo={userInfo as UserInfo} stats={stats} />
-      <CtiProvider userInfo={userInfo as UserInfo} />
-      <CtiRequest userInfo={userInfo as UserInfo} />
+      <CtiProvider  />
+      <CtiOnchain  />
+      <CtiRequest  />
+      <CtiPurchased  />
     </div>
   )
 }

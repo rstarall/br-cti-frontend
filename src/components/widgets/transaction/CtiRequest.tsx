@@ -1,19 +1,41 @@
-import { Table, Tag, Modal } from 'antd';
+import { Table, Tag, Button } from 'antd';
 import { useState } from 'react';
+import { useCtiStore } from '@/store/ctiStore';
 import { useCtiRequestStore } from '@/store/ctiRequestStore';
-import { UserInfo } from '@/store/user';
-import { useWindowManager } from '@/context/WindowManager';
-import CtiDetail from '@/components/cti/CtiDetail';
-import EvaluateStakeModal from '@/components/widgets/transaction/EvaluateStakeModal';
+import { useUserStore ,Transaction, TransactionTypeEnum } from '@/store/user';
 import { CtiData } from '@/store/ctiStore';
 import { useMessage } from '@/context/MessageProvider';
 import type { ColumnsType } from 'antd/es/table';
-import { StakeStatusEnum } from '@/store/user';
-export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
-  const { ctiRequestItems, removeFromCtiRequest } = useCtiRequestStore();
-  const { openWindow, openModalWindow } = useWindowManager();
+import { Key, RowSelectMethod } from 'antd/es/table/interface';
+
+const generateTransactionId = (): string => {
+  // 获取当前时间的36进制表示
+  const timeBase36 = Date.now().toString(36);
+  
+  // 生成安全随机数（兼容浏览器和Node.js）
+  const crypto = window.crypto || (window as any).msCrypto;
+  const randomBuffer = new Uint8Array(8);
+  crypto.getRandomValues(randomBuffer);
+  
+  // 转换为36进制字符串
+  const randomBase36 = Array.from(randomBuffer, byte => 
+    byte.toString(36).padStart(2, '0')
+  ).join('').slice(0, 10);
+
+  // 组合成完整交易ID
+  return `${timeBase36}${randomBase36}`.toLowerCase();
+}
+
+
+export const CtiRequest = () => {
+  const { userInfo, addTransaction } = useUserStore();
+  const { ctiRequestItems,removeFromCtiRequest } = useCtiRequestStore();
+  const { updateCtiItem } = useCtiStore();
   const { messageApi } = useMessage();
   const [loading, setLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<CtiData[]>([]);
+
   const columns: ColumnsType<CtiData> = [
     {
       title: 'ID',
@@ -23,53 +45,50 @@ export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
       align: 'center' as const
     },
     {
-      title: '类型',
-      dataIndex: 'tags',
-      key: 'tags', 
-      width: '10%',
-      align: 'center' as const
-    },
-    {
-      title: '状态',
-      dataIndex: 'evaluateStatus',
-      key: 'evaluateStatus',
-      width: '10%',
+      title: 'IPFS地址',
+      dataIndex: 'ipfsAddress',
+      key: 'ipfsAddress',
+      width: '15%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => {
-        const exitUserId = record.requesterEvaluateList?.some((evaluate) => evaluate.walletId === userInfo?.walletId);
-        return <Tag color={exitUserId ? 'green' : 'orange'}>
-          {exitUserId ? '已评估' : '未评估'}
-        </Tag>
+        return <div className="text-center">
+         {record.paymentUserList?.includes(userInfo.walletId) ? record.ipfsAddress : '*********'}
+        </div>
       }
     },
     {
-      title: '评估分数',
-      dataIndex: 'evaluateQuality',
-      key: 'evaluateQuality',
-      width: '10%',
+      title: '密钥',
+      dataIndex: 'cryptoKey',
+      key: 'cryptoKey',
+      width: '15%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => {
-        const evaluateItem = record.requesterEvaluateList?.find((evaluate) => evaluate.walletId === userInfo?.walletId);
-        return <Tag color={evaluateItem?.evaluateQuality ? 'green' : 'orange'}>
-          {evaluateItem?.evaluateQuality ? evaluateItem?.evaluateQuality : 0}
-        </Tag>
+        return <div className="text-center">
+         {record.paymentUserList?.includes(userInfo.walletId) ? record.cryptoKey : '*********'}
+        </div>
       }
     },
     {
-      title: '抵押积分',
-      dataIndex: 'stake',
-      key: 'stake',
+      title: '授权押金',
+      dataIndex: 'value',
+      key: 'value',
+      width: '15%',
+      align: 'center' as const,
+      render: (_: unknown, record: CtiData) => {
+        return <div className="text-center">
+         {(record.value * 0.1).toFixed(2)}
+        </div>
+      }
+    },
+    {
+      title: '支付状态',
+      dataIndex: 'paymentStatus',
+      key: 'paymentStatus',
       width: '10%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => {
-        const evaluateItem = record.requesterEvaluateList?.find((evaluate) => evaluate.walletId === userInfo?.walletId);
-        return <Tag color={evaluateItem?.stakeStatus === StakeStatusEnum.DEDUCTED ? 'red' :
-          (evaluateItem?.stakeStatus === StakeStatusEnum.STAKING ? 'orange' : (
-           evaluateItem?.stakeStatus === StakeStatusEnum.RETURNED ? 'green' : 'orange'))}>
-
-          {evaluateItem?.stakeStatus === StakeStatusEnum.DEDUCTED ? `扣除${evaluateItem?.stake}` :
-           (evaluateItem?.stakeStatus === StakeStatusEnum.RETURNED ? `返回${evaluateItem?.stake}` :
-           (evaluateItem?.stakeStatus === StakeStatusEnum.STAKING ? `抵押${evaluateItem?.stake}` : `未抵押`))}
+        return <Tag color={record.paymentUserList?.includes(userInfo.walletId) ? 'green' : 'orange'}>
+          {record.paymentUserList?.includes(userInfo.walletId) ? '已支付' : '未支付'}
         </Tag>
       }
     },
@@ -79,69 +98,151 @@ export const CtiRequest = ({userInfo}: {userInfo: UserInfo}) => {
       width: '20%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => (
-        <div className="flex space-x-2 w-full justify-center cursor-pointer">
-          <div className="bg-sky-800 text-white p-1 px-2 rounded hover:bg-sky-600 transition-colors shadow-sm" onClick={() => handleDetail(record)}>
-            详情
+        <div className="flex flex-between space-x-2  justify-center cursor-pointer">
+
+          <div className={`text-white p-1 px-2 rounded hover:bg-blue-600 transition-colors shadow-sm
+           ${record.paymentUserList?.includes(userInfo.walletId) ? 'bg-blue-500' : 'bg-blue-500'}`} 
+          onClick={() => {if(!record.paymentUserList?.includes(userInfo.walletId)) handlePayment(record)}}
+          >
+            {record.paymentUserList?.includes(userInfo.walletId) ? '已支付' : '支付'}
           </div>
-          <div className="bg-green-500 text-white p-1 px-2 rounded hover:bg-green-600 transition-colors shadow-sm" onClick={() => handleEvaluate(record)}>
-            评估
-          </div>
-          <div className="bg-red-500 text-white p-1 px-2 rounded hover:bg-red-600 transition-colors shadow-sm" onClick={() => handleRemove(record)}>
+          <div className="bg-red-400 text-white p-1 px-2 rounded hover:bg-red-300 transition-colors shadow-sm" onClick={() => handleRemove(record)}>
             移除
           </div>
         </div>
       )
     }
   ];
-
-  const handleDetail = (record: CtiData) => {
-    console.log("ctiId", record.ctiId);
-    if (!record.ctiId && record.ctiId !== '0') {
-      messageApi.error('CTI ID 不能为空');
+  const createTokenTransaction = (cti:CtiData,from:string,to:string,amount:number) => {
+    if(from ==''||to===''){
       return;
-    };
-    openWindow(
-      'CTI详情',
-      <CtiDetail record={record} />,
-      '800px',
-      '500px',
-      undefined,
-      false
-    )
+    }
+    if(from === to){
+      messageApi.error('不能给自己转账');
+      return;
+    }
+    if(amount <= 0){
+      messageApi.error('转账金额不能小于0');
+      return;
+    }
+    if(from === 'platform'){
+      messageApi.info(`收入${amount}积分`);
+    }else{
+      messageApi.info(`支出${amount}积分`);
+    }
+    const timestamp:string = new Date().toISOString()
+    const outComeTransaction:Transaction = {
+      transactionId: generateTransactionId(),
+      transactionFrom: from,
+      transactionTo: to,
+      transactionToken: parseFloat(amount.toFixed(2)),
+      transactionUserId: from,
+      transactionType: TransactionTypeEnum.OUTCOME,
+      timestamp: timestamp,
+      refInfoId: cti.ctiId,
+    }
+
+    const inComeTransaction:Transaction = {
+      transactionId: generateTransactionId(),
+      transactionFrom: to,
+      transactionTo: from,
+      transactionToken: parseFloat(amount.toFixed(2)),
+      transactionUserId: from,
+      transactionType: TransactionTypeEnum.INCOME,
+      timestamp: timestamp,
+      refInfoId: cti.ctiId,
+    }
+    //支出
+    addTransaction(from,outComeTransaction);
+    //收入
+    addTransaction(to,inComeTransaction);
   }
 
-  const handleEvaluate = (record: CtiData) => {
-    console.log("id", record.ctiId);
-    openModalWindow(
-      '评估',
-      <EvaluateStakeModal cti={record} isOwner={record.walletId === userInfo?.walletId} />,
-      '520px',
-      (record.walletId == userInfo?.walletId) ? '470px' : '390px',
-      "evaluate-stake-modal",
-      false
-    )
-  }
 
   const handleRemove = (record: CtiData) => {
     removeFromCtiRequest(record.ctiId);
     messageApi.success('移除成功');
   }
 
+  const handlePayment = (record: CtiData | undefined) => {
+    setLoading(true);
+    //单个支付
+    if(record){
+      // 支付操作
+      setTimeout(() => {
+        setSelectedRowKeys(selectedRowKeys.filter((item) => item !== record.ctiId));
+        updateCtiItem(record.ctiId, {
+          ...record,
+          paymentUserList: [...(record.paymentUserList||[]), userInfo?.walletId]
+        });
+        createTokenTransaction(record,userInfo.walletId,record.walletId,record.value * 0.1);
+        setLoading(false);
+        messageApi.success('支付成功');
+        removeFromCtiRequest(record.ctiId);
+      }, 1000);
+    }else{
+      //批量支付
+      // 支付操作
+      setTimeout(() => {
+        messageApi.info(`支付${selectedRows.length}项情报`);
+        selectedRows.map((item) => {
+          if(item.ctiId){
+            updateCtiItem(item.ctiId, {
+              ...item,
+              paymentUserList: [...(item.paymentUserList||[]), userInfo?.walletId]
+            });
+            createTokenTransaction(item,userInfo.walletId,item.walletId,item.value * 0.1);
+            removeFromCtiRequest(item.ctiId);
+          }
+        });
+        setSelectedRowKeys([]);
+        setSelectedRows([]);
+        messageApi.success('支付成功');
+        setLoading(false);
+      }, 1000);
+    }
+  }
+  const onSelectChange = (selectedRowKeys: string[],selectedRows: CtiData[],info: { type: RowSelectMethod }) => {
+    setSelectedRowKeys(selectedRowKeys);
+    setSelectedRows(selectedRows);
+  };
+
+  const rowSelection = {
+    fixed: 'left',
+    selectedRowKeys,
+    onChange: onSelectChange,
+    type: 'checkbox' as const,
+    hideSelectAll: false
+  };
+
+  const hasSelected = selectedRowKeys.length > 0;
+
   return (
-    <div className="flex flex-col space-y-4 p-2">
+    <div className="flex flex-col space-y-2 p-2">
       <div className="border-b-2 border-sky-800 py-1">
         <span className="text-sky-800 font-bold my-2">情报交易清单</span>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={ctiRequestItems}
-        bordered
-        pagination={false}
-        className="rounded-lg shadow-sm mt-3"
-        rowClassName="hover:bg-gray-50 transition-colors"
-        loading={loading}
-      />
+      <div className="flex flex-col gap-3">
+        <div className="flex justify-start items-center h-full pt-2">
+          <Button type="primary" onClick={() => handlePayment(undefined)} disabled={!hasSelected} loading={loading}>
+            支付
+          </Button>
+          <span className="text-gray-600 px-3">
+            {hasSelected ? `已选择 ${selectedRowKeys.length} 项` : null}
+          </span>
+        </div>
+        <Table
+          rowSelection={rowSelection}
+          columns={columns}
+          dataSource={ctiRequestItems}
+          rowKey="ctiId"
+          bordered
+          pagination={false}
+          className="rounded-lg shadow-sm"
+          rowClassName="hover:bg-gray-50 transition-colors"
+        />
+      </div>
     </div>
   );
 };
