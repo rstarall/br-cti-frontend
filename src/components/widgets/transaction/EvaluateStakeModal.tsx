@@ -139,7 +139,7 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
         walletId: userInfo?.walletId,
         evaluateQuality: values.Q,
         avgEvaluateQuality: 0,
-        stake: parseFloat((0.1*values.Q).toFixed(2)),
+        stake: parseFloat((0.05*values.Q).toFixed(2)),
         stakeStatus: StakeStatusEnum.STAKING,
       } as UserEvaluateStake
       const currentRequesterEvaluateList = cti.requesterEvaluateList || [];
@@ -169,7 +169,7 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
         walletId: userInfo?.walletId,
         evaluateQuality: values.Q,
         avgEvaluateQuality: 0,
-        stake: parseFloat((0.1*values.Q).toFixed(2)),
+        stake:parseFloat((0.05*values.Q).toFixed(2)),
         stakeStatus: StakeStatusEnum.STAKING,
       } as UserEvaluateStake
       requesterEvaluateList.push(newEvaluate);

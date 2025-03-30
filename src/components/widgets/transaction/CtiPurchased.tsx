@@ -62,7 +62,7 @@ export const CtiPurchased = () => {
       title: '评估分数',
       dataIndex: 'evaluateQuality',
       key: 'evaluateQuality',
-      width: '12%',
+      width: '10%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => {
         const evaluateList = record.requesterEvaluateList || [];
@@ -116,7 +116,7 @@ export const CtiPurchased = () => {
         }
         if (evaluateInfo.stakeStatus === StakeStatusEnum.DEDUCTED){
           return <Tag color='red'>
-            {'已扣除'+(evaluateInfo.stake).toFixed(2)}
+            {'实际扣除'+(evaluateInfo.stake).toFixed(2)}
           </Tag>
         }
       }
@@ -124,7 +124,7 @@ export const CtiPurchased = () => {
     {
       title: '操作',
       key: 'action',
-      width: '20%',
+      width: '15%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => (
         <div className="flex space-x-2 w-full justify-center cursor-pointer">
