@@ -171,14 +171,14 @@ const CtiDetail = ({ record }: { record: CtiData }) => {
   return (
     <div className="p-1">
       <div className="flex space-x-4 mb-4 w-full">
-        <div 
+        {/* <div 
           className={`flex-1 text-center py-2 rounded-lg cursor-pointer 
             ${activeTab === '0' ? 'bg-sky-800 text-white' : 'bg-gray-200 text-gray-700'}`}
           onClick={() => handleTabChange('0')}
         >
           情报详情
-        </div>
-        <div 
+        </div> */}
+        {/* <div 
           className={`flex-1 text-center py-2 rounded-lg cursor-pointer 
             ${activeTab === '1' ? 'bg-sky-800 text-white' : 'bg-gray-200 text-gray-700'}`}
           onClick={() => handleTabChange('1')}
@@ -191,7 +191,7 @@ const CtiDetail = ({ record }: { record: CtiData }) => {
           onClick={() => handleTabChange('2')}
         >
           积分激励
-        </div>
+        </div> */}
       </div>
 
       {activeTab === '0' && renderDetailContent()}

@@ -1,4 +1,4 @@
-import { Table, Tag, Button } from 'antd';
+import { Table, Tag, Button, Tooltip } from 'antd';
 import { useState } from 'react';
 import { useCtiStore } from '@/store/ctiStore';
 import { useCtiRequestStore } from '@/store/ctiRequestStore';
@@ -41,31 +41,37 @@ export const CtiRequest = () => {
       title: 'ID',
       dataIndex: 'ctiId',
       key: 'ctiId',
-      width: '10%',
+      width: '20%',
       align: 'center' as const
     },
     {
       title: 'IPFS地址',
       dataIndex: 'ipfsAddress',
       key: 'ipfsAddress',
-      width: '15%',
+      width: '12%',
       align: 'center' as const,
+      ellipsis: true,
       render: (_: unknown, record: CtiData) => {
-        return <div className="text-center">
-         {record.paymentUserList?.includes(userInfo.walletId) ? record.ipfsAddress : '*********'}
-        </div>
+        return <Tooltip title={record.paymentUserList?.includes(userInfo.walletId) ? record.ipfsAddress : '*********'} placement="topLeft">
+          <span className='truncate' style={{cursor: 'pointer'}}>
+                {record.paymentUserList?.includes(userInfo.walletId) ? record.ipfsAddress : '*********'}
+              </span>
+        </Tooltip>
       }
     },
     {
       title: '密钥',
       dataIndex: 'cryptoKey',
       key: 'cryptoKey',
-      width: '15%',
+      width: '12%',
       align: 'center' as const,
+      ellipsis: true,
       render: (_: unknown, record: CtiData) => {
-        return <div className="text-center">
-         {record.paymentUserList?.includes(userInfo.walletId) ? record.cryptoKey : '*********'}
-        </div>
+        return <Tooltip title={record.paymentUserList?.includes(userInfo.walletId) ? record.cryptoKey : '*********'}placement="topLeft">
+          <span className='truncate' style={{cursor: 'pointer'}}>
+            {record.paymentUserList?.includes(userInfo.walletId) ? record.cryptoKey : '*********'}
+          </span>
+        </Tooltip>
       }
     },
     {
@@ -99,7 +105,6 @@ export const CtiRequest = () => {
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => (
         <div className="flex flex-between space-x-2  justify-center cursor-pointer">
-
           <div className={`text-white p-1 px-2 rounded hover:bg-blue-600 transition-colors shadow-sm
            ${record.paymentUserList?.includes(userInfo.walletId) ? 'bg-blue-500' : 'bg-blue-500'}`} 
           onClick={() => {if(!record.paymentUserList?.includes(userInfo.walletId)) handlePayment(record)}}
@@ -168,6 +173,12 @@ export const CtiRequest = () => {
     setLoading(true);
     //单个支付
     if(record){
+      //不可购买自己的情报
+      if(record.walletId === userInfo.walletId){
+        messageApi.info('不可购买自己的情报');
+        setLoading(false);
+        return;
+      }
       // 支付操作
       setTimeout(() => {
         setSelectedRowKeys(selectedRowKeys.filter((item) => item !== record.ctiId));
@@ -187,6 +198,11 @@ export const CtiRequest = () => {
         messageApi.info(`支付${selectedRows.length}项情报`);
         selectedRows.map((item) => {
           if(item.ctiId){
+            if(item.walletId === userInfo.walletId){
+              messageApi.info('不可购买自己的情报');
+              setLoading(false);
+              return;
+            }
             updateCtiItem(item.ctiId, {
               ...item,
               paymentUserList: [...(item.paymentUserList||[]), userInfo?.walletId]

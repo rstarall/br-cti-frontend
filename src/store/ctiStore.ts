@@ -10,6 +10,7 @@ export enum CtiTypeEnum {
   URL = 3,
   HASH = 4,
   PHISHING = 5,
+  REDOSTCTI = 6,
   OTHERS = 0
 }
 
@@ -31,6 +32,7 @@ export const ctiKeyNameMap = {
   'ipfsAddress': 'IPFS地址',
   'cryptoKey': '密钥',
   'onChain': '上链状态',
+  'data': '情报内容',
   'createdTime': '创建时间',
   'incentiveMechanism': '激励机制',
   'value': '积分',
@@ -44,6 +46,57 @@ export const ctiKeyNameMap = {
   'requesterEvaluateList': '评估列表',
 }
 
+
+export const ReDoSCTIInfoMap = {
+  'threatIntelligenceId': { name: '威胁情报ID', score: 2 },
+  'vulnerableRegex': { name: '含漏洞的正则表达式', score: 15 },
+  'programmingLanguageEnv': { name: '编程语言环境', score: 10 },
+  'attackDuration': { name: '攻击时长', score: 3 },
+  'regexDeploymentLocation': { name: '正则表达式部署位置', score: 5 },
+  'regexVulnerabilityPoint': { name: '正则表达式脆弱点', score: 10 },
+  'attackString': { name: '可用的攻击字符串', score: 10 },
+  'vulnerabilityStaticPattern': { name: '漏洞的静态模式', score: 5 },
+  'timeComplexity': { name: '时间复杂度', score: 5 },
+  'openSourceComponent': { name: '正则表达式所在开源组件', score: 10 },
+  'solution': { name: '解决方案', score: 15 },
+  'description': { name: '其他描述', score: 10 }
+}
+
+
+export interface ReDoSCTI {
+  threatIntelligenceId: string // 威胁情报ID
+  vulnerableRegex: string // 包含漏洞的正则表达式
+  programmingLanguageEnv: number // 编程语言环境
+  attackDuration: string // 攻击时长
+  regexDeploymentLocation: number // 正则表达式部署位置
+  regexVulnerabilityPoint: string // 正则表达式脆弱点
+  attackString: string // 可用的攻击字符串
+  vulnerabilityStaticPattern: string // 漏洞的静态模式
+  timeComplexity: string // 时间复杂度
+  openSourceComponent: string // 正则表达式所在开源组件
+  solution: string // 解决方案
+  description: string // 其他描述
+}
+
+export const ExampleReDoSCTIList: ReDoSCTI[] = [
+  {
+    threatIntelligenceId: '1',
+    vulnerableRegex: 'ata+b',
+    programmingLanguageEnv: 1,
+    attackDuration: '1014ms',
+    regexDeploymentLocation: 1,
+    regexVulnerabilityPoint: '>a+a+< b',
+    attackString: '""+"aa"*5000+"@',
+    vulnerabilityStaticPattern: '指数重叠相邻',
+    timeComplexity: '多项式',
+    openSourceComponent: '无',
+    solution: '将该表达式等价转化为aa+b',
+    description: '僵尸网络的分布式攻击'
+  }
+]
+
+
+
 export interface CtiData {
     id: string
     ctiId: string
@@ -55,7 +108,7 @@ export interface CtiData {
     ipfsAddress: string
     onChain: boolean|false //是否上链
     cryptoKey: string
-    data: string
+    data: ReDoSCTI|string
     createdTime: string
     incentiveMechanism: number
     value: number
@@ -142,42 +195,44 @@ const CTI_TAG_MAP = {
 } as { [key: number]: string }
 
 const generateHashKey = (): string => {
-  // 生成16位大写字母和数字组合的密钥
-  const chars = 'ABCDEF0123456789';
+  // 生成64位小写字母和数字组合的密钥
+  const chars = 'abcdef0123456789';
   let key = '';
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 64; i++) {
     key += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return key;
 }
 
 const mockCreateCTI = (walletId: string,userInfo: UserInfo,currentCtiNum: number): CtiData => {
-    const value = Math.floor(Math.random() * 100);
-      const ctiInfo: CtiData = {
-        id: currentCtiNum.toString()+1,
-        ctiId: `20250325${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`,
-        ctiType: Math.floor(Math.random() * 6),
-        walletId,
-        tags: CTI_TAG_MAP[Math.floor(Math.random() * 6)],
-        ctiHash: 'hash' + Math.random().toString(36).substring(2, 15),
-        ipfsAddress: generateHashKey(),
-        cryptoKey: userInfo.extraInfo?.cryptoKey||generateHashKey(),
-        onChain: false,
-        data: '{ this is an redos cti data }',
-        createdTime: new Date().toISOString(),
-        incentiveMechanism: CtiIncentiveEnum.EVOLUTION,
-        value,
-        reward:0,
-        stake:0,
-        stakeStatus: StakeStatusEnum.UNSTAKED,
-        evaluateStatus: false,
-        evaluateQuality: 0,
-        avgEvaluateQuality: 0,
-        paymentUserList: [],
-        requesterEvaluateList: []
-      }
+  const ctiData = ExampleReDoSCTIList[0];
+  const ctiId = `20250325${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`;
+  ctiData.threatIntelligenceId = ctiId;
+    const ctiInfo: CtiData = {
+      id: currentCtiNum.toString()+1,
+      ctiId: ctiId,
+      ctiType: CtiTypeEnum.REDOSTCTI,
+      walletId,
+      tags: CTI_TAG_MAP[Math.floor(Math.random() * 6)],
+      ctiHash: 'hash' + Math.random().toString(36).substring(2, 15),
+      ipfsAddress: generateHashKey(),
+      cryptoKey: userInfo.extraInfo?.cryptoKey||generateHashKey(),
+      onChain: false,
+      data: ctiData,
+      createdTime: new Date().toISOString(),
+      incentiveMechanism: CtiIncentiveEnum.EVOLUTION,
+      value:50,
+      reward:0,
+      stake:0,
+      stakeStatus: StakeStatusEnum.UNSTAKED,
+      evaluateStatus: false,
+      evaluateQuality: 0,
+      avgEvaluateQuality: 0,
+      paymentUserList: [],
+      requesterEvaluateList: []
+    }
 
-      return ctiInfo;
+    return ctiInfo;
 }
 // 模拟获取用户提供的情报数据
 const mockFetchUserCTI = async (): Promise<{ cti_infos: CtiData[] }> => {

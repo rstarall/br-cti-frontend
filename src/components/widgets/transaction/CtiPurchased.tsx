@@ -1,4 +1,4 @@
-import { Table, Tag } from 'antd';
+import { Table, Tag, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
 import { useCtiStore, CtiData } from '@/store/ctiStore';
 import { StakeStatusEnum } from '@/store/user';
@@ -17,8 +17,6 @@ export const CtiPurchased = () => {
     const purchasedCtiItems = ctiItems.filter((item) => {
       return item.paymentUserList?.includes(userInfo?.walletId || '');
     });
-    //反向排序
-    purchasedCtiItems.reverse();
     setDataSource(purchasedCtiItems);
   }, [ctiItems, userInfo]);
 
@@ -36,6 +34,14 @@ export const CtiPurchased = () => {
       key: 'ipfsAddress',
       width: '15%',
       align: 'center' as const,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip title={text} placement="topLeft">
+          <span className='truncate' style={{cursor: 'pointer'}}>
+            {text}
+          </span>
+        </Tooltip>
+      )
     },
     {
         title: '密钥',
@@ -43,6 +49,14 @@ export const CtiPurchased = () => {
         key: 'cryptoKey',
         width: '15%',
         align: 'center' as const,
+        ellipsis: true,
+        render: (text: string) => (
+          <Tooltip title={text} placement="topLeft">
+            <span className='truncate' style={{cursor: 'pointer'}}>
+              {text}
+            </span>
+          </Tooltip>
+        )
     },
     {
       title: '评估分数',
@@ -56,6 +70,7 @@ export const CtiPurchased = () => {
         if(isExistEvaluate){
           return <Tag color='green'>{isExistEvaluate.evaluateQuality}</Tag>
         }
+        return <Tag color='gray'>未评估</Tag>
       }
     },
     {
@@ -68,10 +83,9 @@ export const CtiPurchased = () => {
         const evaluateList = record.requesterEvaluateList || [];
         const isExistEvaluate = evaluateList.find((item) => item.walletId === userInfo?.walletId);
         if(isExistEvaluate){
-          return <Tag color={isExistEvaluate ? 'green' : 'orange'}>
-            {isExistEvaluate ? '已评估' : '未评估'}
-          </Tag>
+          return <Tag color='green'>已评估</Tag>
         }
+        return <Tag color='gray'>未评估</Tag>
       }
     },
     {
@@ -147,9 +161,9 @@ export const CtiPurchased = () => {
 
   const handleEvaluate = (record: CtiData) => {
     openModalWindow(
-      '评估',
+      '情报评估',
       <EvaluateStakeModal cti={record} isOwner={record.walletId === userInfo?.walletId} />,
-      '520px',
+      '570px',
       (record.walletId == userInfo?.walletId) ? '570px' : '480px',
       "evaluate-stake-modal",
       false

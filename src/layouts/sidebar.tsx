@@ -31,7 +31,7 @@ const Sidebar: React.FC = () => {
     // },
     {
       action: "wallet",
-      title: "账户钱包",
+      title: "用户中心",
       icon: <WalletOutlined />,
       href: "/client/wallet",
       windowType: "frameless",
@@ -42,7 +42,7 @@ const Sidebar: React.FC = () => {
     },
     {
         action: "incentive",
-        title: "情报交易",
+        title: "情报中心",
         icon: <TransactionOutlined />,
         href: "/client/incentive",
         windowType: "normal",

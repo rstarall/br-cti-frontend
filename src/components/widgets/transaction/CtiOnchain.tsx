@@ -1,4 +1,4 @@
-import { Table, Tag, message } from 'antd';
+import { Table, Tag, message, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
 import { useCtiStore, CtiData } from '@/store/ctiStore';
 import { useWindowManager } from '@/context/WindowManager';
@@ -34,6 +34,14 @@ export const CtiOnchain = () => {
       key: 'ipfsAddress',
       width: '15%',
       align: 'center' as const,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip title={text} placement="topLeft">
+          <span className='truncate' style={{cursor: 'pointer'}}>
+            {text}
+          </span>
+        </Tooltip>
+      )
     },
     {
       title: '密钥',
@@ -41,6 +49,14 @@ export const CtiOnchain = () => {
       key: 'cryptoKey',
       width: '15%',
       align: 'center' as const,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip title={text} placement="topLeft">
+          <span className='truncate' style={{cursor: 'pointer'}}>
+            {text}
+          </span>
+        </Tooltip>
+      )
     },
     {
       title: '评估分数',

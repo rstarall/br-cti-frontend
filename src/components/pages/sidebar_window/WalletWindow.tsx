@@ -54,15 +54,13 @@ export const WalletWindow = () => {
   const handleUserInfo = () => {
     openWindow(
       "我的密钥", 
-      <div className="flex flex-col p-2 space-y-2">
-        <div className="text-center">{userInfo?.extraInfo?.cryptoKey}</div>
-        <div className="text-center bg-gray-100 py-2 rounded-md cursor-pointer" onClick={() => {
-          navigator.clipboard.writeText(userInfo?.extraInfo?.cryptoKey || '');
-          messageApi.success("复制成功")
-        }}>复制</div>
+      <div className="flex flex-col p-2 space-y-2 text-sm">
+        <span>私钥: {userInfo?.extraInfo?.privateKey}</span>
+        <span>加密密钥: {userInfo?.extraInfo?.cryptoKey}</span>
+        <span>初始向量: {userInfo?.extraInfo?.iv}</span>
       </div>, 
-      "200px", 
-      "140px", 
+      "640px", 
+      "160px", 
       "user-info-window",
       false
     );

@@ -25,7 +25,7 @@ export const HeaderLayout = () => {
           window.location.href = "/"
         }}>
           {/* <span className="ml-[8vw] text-header-logo-500">B&R</span> */}
-          <span className="ml-[8vw] text-header-logo-500">ReDos</span>
+          <span className="ml-[8vw] text-header-logo-500">ReDoS</span>
           <span className="ml-[5px] text-white">{t("a cti sharing platform")}</span>
         </div>
         <NavBar />

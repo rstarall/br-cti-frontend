@@ -1,8 +1,8 @@
 
 
-import { Form, Input } from 'antd';
-import { useState } from 'react';
-import { CtiData } from '@/store/ctiStore';
+import { Form, Input, Table } from 'antd';
+import { useState,useEffect } from 'react';
+import { CtiData,CtiTypeEnum,ReDoSCTIInfoMap } from '@/store/ctiStore';
 import { useMessage } from '@/context/MessageProvider';
 import { useWindowManager } from '@/context/WindowManager';
 import { useCtiStore } from '@/store/ctiStore';
@@ -39,6 +39,13 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
   const [stake, setStake] = useState(0);
   const { updateCtiItem } = useCtiStore();
   const { showLoading, hideLoading } = useLoading();
+  interface EvaluateRecord{
+    key:string;
+    value:string;
+    attributeEvaluate:number;
+  }
+  const [ctiDataAttributeColumns,setCtiDataAttributeColumns] = useState<EvaluateRecord[]>([]);
+
   const calculateValues = (Q: number) => {
     const rewardValue = 0.9 * Math.log(1 + Q);
     const stakeValue = 0.1 * Math.log(1 + Q);
@@ -119,7 +126,7 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
     const currentCtiItem = cti
     if (isOwner) {
       if(currentCtiItem.evaluateStatus){
-        messageApi.info('不可重复评估');
+        messageApi.info('提供者已评估');
         closeWindow("evaluate-stake-modal");
         return;
       };
@@ -127,12 +134,22 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
       if(currentCtiItem.stakeStatus === StakeStatusEnum.UNSTAKED){
         createTokenTransaction('platform',userInfo?.walletId,reward);
       }
+      const newEvaluate = {
+        ctiId: cti.ctiId,
+        walletId: userInfo?.walletId,
+        evaluateQuality: values.Q,
+        avgEvaluateQuality: 0,
+        stake: parseFloat((0.1*values.Q).toFixed(2)),
+        stakeStatus: StakeStatusEnum.STAKING,
+      } as UserEvaluateStake
+      const currentRequesterEvaluateList = cti.requesterEvaluateList || [];
+      currentRequesterEvaluateList.push(newEvaluate);
+      currentCtiItem.requesterEvaluateList = currentRequesterEvaluateList;
       currentCtiItem.evaluateStatus = true;
       currentCtiItem.evaluateQuality = values.Q;
       currentCtiItem.reward = reward;
       currentCtiItem.stake = stake;
       currentCtiItem.stakeStatus = StakeStatusEnum.STAKING;
-      currentCtiItem.requesterEvaluateList = cti.requesterEvaluateList || [];
       updateCtiItem(cti.ctiId, {
         ...currentCtiItem,
       });
@@ -174,7 +191,7 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
               createTokenTransaction('platform',item.walletId,item.stake);
             }
           }
-       });
+      });
       currentCtiItem.avgEvaluateQuality = avgEvaluateQuality;
       currentCtiItem.requesterEvaluateList = requesterEvaluateList;
       updateCtiItem(cti.ctiId, {
@@ -190,7 +207,55 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
       hideLoading();
     }, 500+Math.random()*1000);
   };
-
+  
+  useEffect(() => {
+    if(cti.ctiType === CtiTypeEnum.REDOSTCTI){
+      const columns = Object.entries(cti.data).map(([key,value]) => ({
+        key: key,
+        value: value,
+        attributeEvaluate: 0,
+      }));
+      setCtiDataAttributeColumns(columns);
+    }
+  },[cti])
+  const ctiDataColumns = [
+      {
+      title: '主键',
+      dataIndex: 'key',
+      key: 'key',
+      width: '13%',
+      align: 'left' as const,
+      render: (key:string) => {
+        return <div className='text-gray-500'>{ReDoSCTIInfoMap[key as keyof typeof ReDoSCTIInfoMap].name}</div>
+      }
+    },
+    {
+      title: '值',
+      dataIndex: 'value',
+      key: 'value', 
+      width: '15%',
+      align: 'left' as const,
+    },
+    {
+      title: '评分',
+      dataIndex: 'attributeEvaluate',
+      key: 'attributeEvaluate', 
+      width: '15%',
+      align: 'left' as const,
+      render: (attributeEvaluate:number,evaluateRecord:EvaluateRecord) => {
+        return <Input type="number" min={0} max={ReDoSCTIInfoMap[evaluateRecord.key as keyof typeof ReDoSCTIInfoMap].score} value={attributeEvaluate} onChange={(e) => {
+          let value = Number(e.target.value);
+          if(value < 0)value = 0;
+          if(value > ReDoSCTIInfoMap[evaluateRecord.key as keyof typeof ReDoSCTIInfoMap].score)value = ReDoSCTIInfoMap[evaluateRecord.key as keyof typeof ReDoSCTIInfoMap].score;
+          setCtiDataAttributeColumns(ctiDataAttributeColumns.map(item => item.key === evaluateRecord.key ? {...item,attributeEvaluate:value} : item));
+           //计算所有评分总和
+           const totalScore = ctiDataAttributeColumns.reduce((acc, curr) => acc + curr.attributeEvaluate, 0);
+           calculateValues(totalScore);
+           form.setFieldsValue({ Q: totalScore });
+        }} />
+      }
+    }
+  ]
   return (
     <Form
       form={form}
@@ -202,14 +267,20 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
         <Input disabled defaultValue={cti.ctiId} />
       </Form.Item>
       <Form.Item label="情报内容" name="data">
-        <div className='bg-gray-100 p-2 rounded-md'>
-          {cti.data||'{ this is an redos cti data }'} 
+        {
+          cti.ctiType === CtiTypeEnum.REDOSTCTI?
+          <Table pagination={false} columns={ctiDataColumns} dataSource={ctiDataAttributeColumns} />
+          :
+          <div className='bg-gray-100 p-2 rounded-md'>
+          {typeof cti.data === 'string'?cti.data:JSON.stringify(cti.data)} 
         </div>
+        }
       </Form.Item>
 
       <Form.Item 
         label="质量 Q (0-100)" 
         name="Q" 
+        
         rules={[
           { required: true, message: '请输入质量评分' },
           {
@@ -229,6 +300,8 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
           type="number" 
           min={0}
           max={100}
+          disabled
+          defaultValue={0}
           onChange={(e) => {
             let value = Number(e.target.value);
             // 自动修正超出范围的值

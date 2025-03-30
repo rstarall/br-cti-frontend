@@ -1,4 +1,4 @@
-import { Upload, Table, Tag, message, Button } from 'antd';
+import { Upload, Table, Tag, message, Button, Tooltip } from 'antd';
 import { UploadChangeParam, UploadFile } from 'antd/es/upload/interface';
 import { useEffect, useState } from 'react';
 import { useGlobalStore } from '@/store/global';
@@ -45,6 +45,14 @@ export const CtiProvider = () => {
       key: 'ipfsAddress', 
       width: '15%',
       align: 'center' as const,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip title={text} placement="topLeft">
+          <span className='truncate' style={{cursor: 'pointer'}}>
+            {text}
+          </span>
+        </Tooltip>
+      )
     },
     {
       title: '密钥',
@@ -52,6 +60,14 @@ export const CtiProvider = () => {
       key: 'cryptoKey', 
       width: '15%',
       align: 'center' as const,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip title={text} placement="topLeft">
+          <span className='truncate' style={{cursor: 'pointer'}}>
+            {text}
+          </span>
+        </Tooltip>
+      )
     },
     {
       title: '评估分数',
@@ -145,9 +161,9 @@ export const CtiProvider = () => {
   const handleEvaluate = (record: CtiData) => {
     console.log("id", record.ctiId);
     openModalWindow(
-      '评估',
+      '情报评估',
       <EvaluateStakeModal cti={record} isOwner={record.walletId === userInfo?.walletId} />,
-      '520px',
+      '570px',
       (record.walletId == userInfo?.walletId) ? '570px' : '530px',
       "evaluate-stake-modal",
       false

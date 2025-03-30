@@ -108,9 +108,9 @@ export const CtiMarket = () => {
       align: 'center',
       render: (text: string) => 
       {
-        // const index = data.findIndex(item => item.id === text)
-        // return <span>{index+1}</span>
-        return <span>{text}</span>
+        const index = data.findIndex(item => item.id === text)
+        return <span>{index+1}</span>
+        // return <span>{text}</span>
       }
       
     },
@@ -138,16 +138,16 @@ export const CtiMarket = () => {
     //   width: '8%',
     //   align: 'center'
     // },
-    {
-      title: 'HASH',
-      dataIndex: 'ctiHash',
-      key: 'ctiHash',
-      width: '13%',
-      align: 'center',
-      render: (text: string) => (
-        <span>{text.slice(0, 10)}...{text.slice(-3)}</span>
-      )
-    },
+    // {
+    //   title: 'HASH',
+    //   dataIndex: 'ctiHash',
+    //   key: 'ctiHash',
+    //   width: '13%',
+    //   align: 'center',
+    //   render: (text: string) => (
+    //     <span>{text.slice(0, 10)}...{text.slice(-3)}</span>
+    //   )
+    // },
     {
       title: '发布时间',
       dataIndex: 'createdTime',
@@ -180,6 +180,18 @@ export const CtiMarket = () => {
             {record.incentiveMechanism === CtiIncentiveEnum.EVOLUTION ? 'dynamic':value}
             </span>
         </Tag>
+      )
+    },
+    {
+      title: '评估数量',
+      dataIndex: 'evaluateCount',
+      key: 'evaluateCount',
+      width: '6%',
+      align: 'center',
+      render: (_: unknown,record:CtiData) => (
+        <span className="font-bold" >
+          {record.requesterEvaluateList?.length}
+        </span>
       )
     },
     {
