@@ -25,14 +25,14 @@ export const CtiPurchased = () => {
       title: 'ID',
       dataIndex: 'ctiId',
       key: 'ctiId',
-      width: '12%',
+      width: '10%',
       align: 'center' as const,
     },
     {
       title: 'IPFS地址',
       dataIndex: 'ipfsAddress',
       key: 'ipfsAddress',
-      width: '15%',
+      width: '13%',
       align: 'center' as const,
       ellipsis: true,
       render: (text: string) => (
@@ -47,7 +47,7 @@ export const CtiPurchased = () => {
         title: '密钥',
         dataIndex: 'cryptoKey',
         key: 'cryptoKey',
-        width: '15%',
+        width: '13%',
         align: 'center' as const,
         ellipsis: true,
         render: (text: string) => (
@@ -124,7 +124,7 @@ export const CtiPurchased = () => {
     {
       title: '操作',
       key: 'action',
-      width: '25%',
+      width: '20%',
       align: 'center' as const,
       render: (_: unknown, record: CtiData) => (
         <div className="flex space-x-2 w-full justify-center cursor-pointer">

@@ -55,9 +55,10 @@ export const WalletWindow = () => {
     openWindow(
       "我的密钥", 
       <div className="flex flex-col p-2 space-y-2 text-sm">
-        <span>私钥: {userInfo?.extraInfo?.privateKey}</span>
-        <span>加密密钥: {userInfo?.extraInfo?.cryptoKey}</span>
-        <span>初始向量: {userInfo?.extraInfo?.iv}</span>
+        <span>公钥: {userInfo?.extraInfo?.publicKey} ...</span>
+        <span>私钥: {userInfo?.extraInfo?.privateKey} ...</span>
+        <span>搜索密钥: {userInfo?.extraInfo?.searchKey}</span>
+        {/* <span>加密密钥: {userInfo?.extraInfo?.cryptoKey}</span> */}
       </div>, 
       "640px", 
       "160px", 

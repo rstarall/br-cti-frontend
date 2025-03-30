@@ -12,7 +12,9 @@ export interface UserInfo {
 }
 
 export interface ExtraInfo {
+  publicKey: string // 公钥
   privateKey: string // 私钥
+  searchKey: string // 搜索密钥
   cryptoKey: string // 加密密钥
   iv: string // 初始向量
 }
@@ -66,6 +68,18 @@ interface UserState {
   initializeUserInfo: () => void
 }
 
+const generateRandomKey = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let key = '';
+  for (let i = 0; i < 64; i++) {
+    key += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return key;
+}
+
+
+
+
 const generateHashKey = (): string => {
   // 生成64位小写字母和数字组合的密钥
   const chars = 'abcdef0123456789';
@@ -86,8 +100,10 @@ export const useUserStore = create<UserState>()(
         tokenNumber: 0,
         transactions: [],
         extraInfo: {
-          cryptoKey: '',
+          publicKey: '',
           privateKey: '',
+          searchKey: '',
+          cryptoKey: '',
           iv: ''
         },
         ownerCtiList: []
@@ -169,8 +185,10 @@ export const useUserStore = create<UserState>()(
             walletId: '0xacb123abc01',
             transactions: [],
             extraInfo: {
+              publicKey: generateRandomKey(),
+              privateKey: generateRandomKey(),
+              searchKey: generateHashKey(),
               cryptoKey: generateHashKey(),
-              privateKey: generateHashKey(),
               iv: generateHashKey()
             },
             ownerCtiList: []
@@ -181,8 +199,10 @@ export const useUserStore = create<UserState>()(
             walletId: 'platform',
             transactions: [],
             extraInfo: {
+              publicKey: generateRandomKey(),
+              privateKey: generateRandomKey(),
+              searchKey: generateHashKey(),
               cryptoKey: generateHashKey(),
-              privateKey: generateHashKey(),
               iv: generateHashKey()
             },
             ownerCtiList: []

@@ -44,6 +44,14 @@ export const WalletRegisterWindow = () => {
     // 组合成完整地址
     return `0x${randomHex}${timeHex}`.toLowerCase();
   };
+  const generateRandomKey = (): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let key = '';
+    for (let i = 0; i < 64; i++) {
+      key += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return key;
+  }
   const generateHashKey = (): string => {
     // 生成64位小写字母和数字组合的密钥
     const chars = 'abcdef0123456789';
@@ -94,8 +102,10 @@ export const WalletRegisterWindow = () => {
       transactions: [],
       ownerCtiList: [],
       extraInfo: {
+        publicKey: generateRandomKey(),
+        privateKey: generateRandomKey(),
+        searchKey: generateHashKey(),
         cryptoKey: generateHashKey(),
-        privateKey: generateHashKey(),
         iv: generateHashKey()
       }
     }
