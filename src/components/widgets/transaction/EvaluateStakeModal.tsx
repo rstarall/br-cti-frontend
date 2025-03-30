@@ -164,7 +164,8 @@ const EvaluateStakeModal = ({ cti, isOwner = false}: { cti: CtiData,isOwner?:boo
        requesterEvaluateList.forEach(item => {
           item.avgEvaluateQuality = avgEvaluateQuality;
           if(item.stakeStatus !== StakeStatusEnum.STAKING)return; //不可重复评估
-          if(requesterEvaluateList.length > 3 &&Math.abs(item.evaluateQuality - avgEvaluateQuality) > 0.3*avgEvaluateQuality){
+          if(requesterEvaluateList.length < 3)return;
+          if(Math.abs(item.evaluateQuality - avgEvaluateQuality) > 0.3*avgEvaluateQuality){
             item.stakeStatus = StakeStatusEnum.DEDUCTED; //评估质量与平均评估质量相差超过30%，扣除押金
           }else{
             item.stakeStatus = StakeStatusEnum.RETURNED; //评估质量与平均评估质量相差不超过30%，返回押金
