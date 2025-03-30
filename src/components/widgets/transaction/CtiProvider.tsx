@@ -133,12 +133,16 @@ export const CtiProvider = () => {
     }
     if(info.file.status === 'done'){
       messageApi.success('上传成功');
-      createCti(userInfo?.walletId,userInfo);
+      for(let i=0;i<3;i++){
+        createCti(userInfo?.walletId,userInfo);
+      }
     }
     if(info.file.status === 'error'){
       info.file.status = 'done';
       messageApi.success('上传成功');
-      createCti(userInfo?.walletId,userInfo);
+      for(let i=0;i<3;i++){
+        createCti(userInfo?.walletId,userInfo);
+      }
     }
   };
 

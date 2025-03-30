@@ -43,12 +43,12 @@ const INCENTIVE_MAP = {
 
 
 // Mock数据生成函数
-const generateMockData = (page: number, pageSize: number,mockCtiData:CtiData[]) => {
+const generateMockData = (page: number, pageSize: number,mockCtiData:CtiData[],limit:number = 0) => {
 
   const data: CtiData[] = [];
   const startIndex = (page - 1) * pageSize;
   
-  for (let i = 0; i < pageSize; i++) {
+  for (let i = 0; i <(limit!==0?limit:pageSize); i++) {
     const id = startIndex + i + 1;
     if(id>=mockCtiData.length){
       break;
@@ -58,7 +58,7 @@ const generateMockData = (page: number, pageSize: number,mockCtiData:CtiData[]) 
 
   return {
     cti_infos: data,
-    total: mockCtiData.length
+    total: limit!==0?limit:mockCtiData.length
   };
 }
 
@@ -69,8 +69,9 @@ const mockFetchCTIData = async (params: Record<string, unknown> = {}) => {
     setTimeout(() => {
       const page = params.page || 1;
       const pageSize = params.pageSize || 15;
+      const limit = params.limit || 3;
       const mockCtiData = params.mockCtiData ||[]
-      resolve(generateMockData(page as number, pageSize as number,mockCtiData as CtiData[]));
+      resolve(generateMockData(page as number, pageSize as number,mockCtiData as CtiData[],limit as number));
     }, 500); // 模拟500ms的网络延迟
   });
 }
@@ -252,7 +253,8 @@ export const CtiMarket = () => {
 
   const handleSearch = (value: string) => {
     fetchData({
-      keyword: value
+      keyword: value,
+      limit:3
     })
   }
 
