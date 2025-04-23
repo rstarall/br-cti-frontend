@@ -1,0 +1,8 @@
+
+.main-layout {
+  @apply flex justify-start items-center;
+  @apply min-h-screen;
+}
+
+
+

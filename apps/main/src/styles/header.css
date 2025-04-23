@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+.header-container {
+  @apply flex justify-start items-center;
+  @apply h-[50px];
+}
+
+
+.nav-bar {
+  @apply flex justify-start items-center;
+  @apply h-[50px];
+}
+
+.nav-bar-item {
+  @apply flex justify-start items-center;
+  @apply h-[50px];
+}
+
+.nav-bar-item-text {
+  @apply flex justify-center items-center text-white h-[50px];
+  @apply mr-5 ml-5;
+}
+
+
+
+
