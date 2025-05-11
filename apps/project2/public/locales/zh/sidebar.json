@@ -1,0 +1,12 @@
+{
+  "networkConnection": "网络连接",
+  "userCenter": "账户钱包",
+  "intelligenceCenter": "情报中心",
+  "localData": "本地数据",
+  "modelManagement": "模型管理",
+  "intelligenceQA": "情报问答",
+  "dataVisualization": "数据可视化",
+  "networkConnectionComponent": "网络连接组件",
+  "localDataComponent": "本地数据组件",
+  "modelManagementComponent": "模型管理组件"
+}

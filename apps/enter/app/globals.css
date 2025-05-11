@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*盒子布局，padding和border包含在元素的width和height内*/
+* { box-sizing: border-box; }
+
+
+/* 自定义背景颜色 */
+.bg-custom-white {
+  background-color: #ffffff; /* 白色 */
+}
+
+/* 确保 html 和 body 没有 padding */
+html, body {
+  padding: 0;
+  margin: 0; /* 通常也会移除 margin */
+}
+
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+
+/* 确保article元素文本上下居中 */
+article {
+  margin-bottom: -12px;
+}
+
+/* 下拉菜单容器样式 */
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* 下拉菜单样式 */
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 50;
+  min-width: 150px;
+  max-width: 200px;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@theme {
+  --color-header-500: #242934;
+  --color-header-logo-500: purple;
+  --color-footer-600:#2c313c;
+  --color-footer-500: #92969d;
+  --color-footer-text-500: #92969d;
+}

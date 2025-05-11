@@ -1,0 +1,110 @@
+{
+  "title": "未知风险主动防御",
+  "alert": {
+    "system": "防御系统"
+  },
+  "defense": {
+    "types": {
+      "port": "端口跳变",
+      "ip": "IP跳变",
+      "traffic": "流量牵引"
+    },
+    "interval": {
+      "port": "端口跳变间隔 (秒)",
+      "ip": "IP跳变间隔 (秒)"
+    },
+    "target": "流量牵引目标",
+    "honeypots": {
+      "web": "蜜罐 1 (Web服务器)",
+      "db": "蜜罐 2 (数据库)",
+      "file": "蜜罐 3 (文件服务器)"
+    },
+    "status": {
+      "active": "已激活",
+      "inactive": "未激活"
+    },
+    "buttons": {
+      "start": "启动防御",
+      "stop": "停止防御",
+      "execute": "手动执行防御"
+    },
+    "messages": {
+      "port_success": "端口跳变防御执行成功，服务端口从 {{from}} 跳变到 {{to}}",
+      "ip_success": "IP跳变防御执行成功，服务IP从 {{from}} 跳变到 {{to}}",
+      "traffic_success": "流量牵引防御执行成功，可疑流量已重定向至蜜罐 {{target}}",
+      "started": "已启动{{type}}防御系统",
+      "stopped": "已停止主动防御系统",
+      "switched": "已切换至{{type}}防御模式",
+      "auto_execute": "{{type}}防御已激活，每 {{interval}} 秒自动执行一次",
+      "traffic_active": "流量牵引防御已激活，可疑流量将被重定向至 {{target}}"
+    }
+  },
+  "stats": {
+    "total_alerts": "总告警",
+    "port_hopping": "端口跳变",
+    "ip_hopping": "IP跳变",
+    "traffic_redirection": "流量牵引",
+    "active_defenses": "总防御次数"
+  },
+  "alerts": {
+    "title": "告警列表",
+    "filters": {
+      "all_alerts": "所有告警",
+      "all_levels": "所有等级",
+      "high_risk": "高风险",
+      "medium_risk": "中风险",
+      "low_risk": "低风险"
+    },
+    "types": {
+      "dos": "DoS攻击",
+      "port_scan": "端口扫描",
+      "brute_force": "暴力破解",
+      "data_exfiltration": "数据泄露",
+      "suspicious_traffic": "可疑流量"
+    },
+    "levels": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "table": {
+      "time": "时间",
+      "type": "告警类型",
+      "src": "来源IP",
+      "dst": "目标IP",
+      "level": "风险等级",
+      "defense": "防御措施",
+      "actions": "操作"
+    },
+    "actions": {
+      "details": "详情",
+      "apply": "应用防御",
+      "not_applied": "未应用"
+    }
+  },
+  "details": {
+    "title": "防御详情",
+    "fields": {
+      "alert_type": "告警类型",
+      "time": "时间",
+      "src": "来源IP",
+      "dst": "目标IP",
+      "level": "风险等级",
+      "protocol": "协议",
+      "applied_defenses": "已应用防御措施",
+      "defense_details": "防御详情",
+      "available_defenses": "可用防御措施"
+    },
+    "defense_descriptions": {
+      "port": "动态改变服务端口，使攻击者无法锁定目标端口",
+      "ip": "动态改变服务IP地址，使攻击者无法锁定目标IP",
+      "traffic": "将可疑流量重定向至蜜罐，保护真实服务"
+    },
+    "buttons": {
+      "apply_port": "应用端口跳变",
+      "apply_ip": "应用IP跳变",
+      "apply_traffic": "应用流量牵引",
+      "close": "关闭"
+    }
+  }
+}

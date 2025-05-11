@@ -1,0 +1,110 @@
+{
+  "title": "Unknown Risk Active Defense",
+  "alert": {
+    "system": "Defense System"
+  },
+  "defense": {
+    "types": {
+      "port": "Port Hopping",
+      "ip": "IP Hopping",
+      "traffic": "Traffic Redirection"
+    },
+    "interval": {
+      "port": "Port Hopping Interval (seconds)",
+      "ip": "IP Hopping Interval (seconds)"
+    },
+    "target": "Traffic Redirection Target",
+    "honeypots": {
+      "web": "Honeypot 1 (Web Server)",
+      "db": "Honeypot 2 (Database)",
+      "file": "Honeypot 3 (File Server)"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "buttons": {
+      "start": "Start Defense",
+      "stop": "Stop Defense",
+      "execute": "Execute Defense Manually"
+    },
+    "messages": {
+      "port_success": "Port hopping defense executed successfully, service port changed from {{from}} to {{to}}",
+      "ip_success": "IP hopping defense executed successfully, service IP changed from {{from}} to {{to}}",
+      "traffic_success": "Traffic redirection defense executed successfully, suspicious traffic redirected to honeypot {{target}}",
+      "started": "{{type}} defense system started",
+      "stopped": "Active defense system stopped",
+      "switched": "Switched to {{type}} defense mode",
+      "auto_execute": "{{type}} defense activated, automatically executing every {{interval}} seconds",
+      "traffic_active": "Traffic redirection defense activated, suspicious traffic will be redirected to {{target}}"
+    }
+  },
+  "stats": {
+    "total_alerts": "Total Alerts",
+    "port_hopping": "Port Hopping",
+    "ip_hopping": "IP Hopping",
+    "traffic_redirection": "Traffic Redirection",
+    "active_defenses": "Total Defenses"
+  },
+  "alerts": {
+    "title": "Alert List",
+    "filters": {
+      "all_alerts": "All Alerts",
+      "all_levels": "All Levels",
+      "high_risk": "High Risk",
+      "medium_risk": "Medium Risk",
+      "low_risk": "Low Risk"
+    },
+    "types": {
+      "dos": "DoS Attack",
+      "port_scan": "Port Scan",
+      "brute_force": "Brute Force",
+      "data_exfiltration": "Data Exfiltration",
+      "suspicious_traffic": "Suspicious Traffic"
+    },
+    "levels": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "table": {
+      "time": "Time",
+      "type": "Alert Type",
+      "src": "Source IP",
+      "dst": "Destination IP",
+      "level": "Risk Level",
+      "defense": "Defense Measures",
+      "actions": "Actions"
+    },
+    "actions": {
+      "details": "Details",
+      "apply": "Apply Defense",
+      "not_applied": "Not Applied"
+    }
+  },
+  "details": {
+    "title": "Defense Details",
+    "fields": {
+      "alert_type": "Alert Type",
+      "time": "Time",
+      "src": "Source IP",
+      "dst": "Destination IP",
+      "level": "Risk Level",
+      "protocol": "Protocol",
+      "applied_defenses": "Applied Defense Measures",
+      "defense_details": "Defense Details",
+      "available_defenses": "Available Defense Measures"
+    },
+    "defense_descriptions": {
+      "port": "Dynamically change service ports to prevent attackers from targeting specific ports",
+      "ip": "Dynamically change service IP addresses to prevent attackers from targeting specific IPs",
+      "traffic": "Redirect suspicious traffic to honeypots to protect real services"
+    },
+    "buttons": {
+      "apply_port": "Apply Port Hopping",
+      "apply_ip": "Apply IP Hopping",
+      "apply_traffic": "Apply Traffic Redirection",
+      "close": "Close"
+    }
+  }
+}

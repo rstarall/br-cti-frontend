@@ -1,0 +1,12 @@
+{
+  "networkConnection": "Network",
+  "userCenter": "Wallet",
+  "intelligenceCenter": "Intelligence",
+  "localData": "Local Data",
+  "modelManagement": "Models",
+  "intelligenceQA": "Q&A",
+  "dataVisualization": "Visualization",
+  "networkConnectionComponent": "Network Connection Component",
+  "localDataComponent": "Local Data Component",
+  "modelManagementComponent": "Model Management Component"
+}
