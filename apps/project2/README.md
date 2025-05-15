@@ -1,6 +1,6 @@
 # BR-CTI Frontend
 
-This is the frontend for the BR-CTI (Blockchain-based B&R Cyber Threat Intelligence) platform, built with Next.js 19, Tailwind CSS, and TypeScript.
+This is the frontend for the BR-CTI (Blockchain-based B&R Cyber Threat Intelligence) platform, built with Next.js, Tailwind CSS, and TypeScript.
 
 ## Features
 
@@ -36,7 +36,7 @@ pnpm install
 pnpm dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+4. Open [http://localhost:3001](http://localhost:3001) in your browser.
 
 ## Project Structure
 
@@ -65,6 +65,8 @@ pnpm dev
 │   ├── networkStore.ts   # Network state
 │   ├── dataStore.ts      # Data state
 │   └── modelStore.ts     # Model state
+├── api/                  # API documentation
+│   └── readme/           # API endpoints documentation
 └── public/               # Static assets
 ```
 
@@ -102,6 +104,26 @@ This project follows the MVP (Model-View-Presenter) architecture:
 - **View**: React components that render the UI
 - **Presenter**: Context and hooks that connect the model to the view
 
+## Micro-Frontend Architecture
+
+This project is part of a micro-frontend architecture using qiankun:
+
+- **Main App**: The entry application that hosts all micro-frontends
+- **Project2** (This app): Running on port 3001
+- **Data-View**: A Vue.js application for data visualization
+
+To run the entire system:
+
+```bash
+# From root directory
+pnpm dev
+
+# Or using the start script
+node scripts/start-all.mjs
+```
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+

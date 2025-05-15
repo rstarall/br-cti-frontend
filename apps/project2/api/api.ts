@@ -31,10 +31,13 @@ api.interceptors.request.use((config) => {
       config.url?.includes('/blockchain/')
     ) {
     config.baseURL = clientServerHost;
-    if(config.url.includes('queryPointTransactions')) config.baseURL = blockchainServerHost;
-    if(config.url.includes('queryUserDetailInfo')) config.baseURL = blockchainServerHost;
-    if(config.url.includes('queryUserOwnCTIInfos')) config.baseURL = blockchainServerHost;
-  } else if (config.url?.includes('/blockchain/') || config.url?.includes('/cti/') || config.url?.includes('/model/') || config.url?.includes('/ipfs/')) {
+    if(config.url.includes('queryPointTransactions')||
+      config.url.includes('queryChain')||
+      config.url.includes('queryBlock')||
+      config.url.includes('queryUserDetailInfo')||
+      config.url.includes('queryUserOwnCTIInfos')
+    ) config.baseURL = blockchainServerHost;
+  } else if (config.url?.includes('/cti/') || config.url?.includes('/model/') || config.url?.includes('/ipfs/')) {
     config.baseURL = blockchainServerHost;
   } else if (config.url?.includes('/comment/')) {
     // Check if it's a query endpoint (queryCommentsByRefID) which should go to blockchain server
