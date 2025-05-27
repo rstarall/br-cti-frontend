@@ -5,11 +5,12 @@
     "build": "pnpm --filter ./apps/main run build && pnpm --filter ./apps/*-app run build",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
-    "clean": "rm -rf **/node_modules && rm -rf **/dist"
+    "clean": "rd /s /q node_modules & rd /s /q dist"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.6.1",
     "qiankun": "^2.10.16",
-    "react-router-dom": "^7.4.1"
+    "react-router-dom": "^7.4.1",
+    "chart.js": "4.4.1"
   }
 }
