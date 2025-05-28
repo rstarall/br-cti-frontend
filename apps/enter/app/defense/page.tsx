@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Tabs } from 'antd';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import DDoSDefenseDemo from '@/components/defense/DefenseRules';
 
 export default function DefensePage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -17,228 +18,31 @@ export default function DefensePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="已拦截攻击"
-            value="12,486"
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            }
-          />
-
-          <StatCard
-            title="今日拦截"
-            value="342"
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            }
-          />
-
-          <StatCard
-            title="防御规则"
-            value="128"
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-              </svg>
-            }
-          />
-
-          <StatCard
-            title="防御模型"
-            value="18"
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-              </svg>
-            }
-          />
-        </div>
-
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
           className="w-full"
           items={[
-            {
-              key: 'dashboard',
-              label: '防御仪表盘',
-              children: (
-                <div className="mt-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>实时攻击监控</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="h-80 flex items-center justify-center bg-gray-100 rounded-md">
-                          <p className="text-gray-500">实时攻击监控图表</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>攻击类型分布</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="h-80 flex items-center justify-center bg-gray-100 rounded-md">
-                          <p className="text-gray-500">攻击类型分布图表</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>最近拦截的攻击</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">时间</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">攻击类型</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">来源IP</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">目标</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">严重程度</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {[...Array(5)].map((_, i) => (
-                              <tr key={i}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {new Date(Date.now() - i * 1000 * 60 * 5).toLocaleString()}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {i % 4 === 0 ? 'SQL注入' : i % 4 === 1 ? 'XSS攻击' : i % 4 === 2 ? 'DDoS攻击' : '暴力破解'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {`192.168.${i + 1}.${i * 20 + 10}`}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {i % 3 === 0 ? 'Web服务器' : i % 3 === 1 ? '数据库服务器' : '认证服务'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${i % 3 === 0 ? 'bg-red-100 text-red-800' : i % 3 === 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
-                                    {i % 3 === 0 ? '高' : i % 3 === 1 ? '中' : '低'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    已拦截
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                  <a href="#" className="text-primary-600 hover:text-primary-900">详情</a>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              ),
-            },
-            {
-              key: 'models',
-              label: '防御模型',
-              children: (
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {[...Array(6)].map((_, i) => (
-                    <ModelCard
-                      key={i}
-                      title={[
-                        'DDoS攻击防御模型',
-                        'SQL注入检测模型',
-                        'XSS攻击防御模型',
-                        '异常流量检测模型',
-                        '恶意代码检测模型',
-                        '身份认证防护模型'
-                      ][i]}
-                      description={`基于深度学习的${[
-                        'DDoS攻击防御模型，能够实时检测和阻断各类DDoS攻击流量',
-                        'SQL注入检测模型，可识别和阻止各种SQL注入攻击',
-                        'XSS攻击防御模型，有效防止跨站脚本攻击',
-                        '异常流量检测模型，能够识别网络中的异常流量模式',
-                        '恶意代码检测模型，可检测各类恶意软件和病毒',
-                        '身份认证防护模型，防止暴力破解和凭证盗用'
-                      ][i]}`}
-                      accuracy={95 - i * 2}
-                      status={i < 4 ? '已启用' : '未启用'}
-                    />
-                  ))}
-                </div>
-              ),
-            },
+            // {
+            //   key: 'dashboard',
+            //   label: 'IP网络防御', //修改过
+            // },
+            // {
+            //   key: 'models',
+            //   label: '5G网络防御', //修改过
+            // },
             {
               key: 'rules',
-              label: '防御规则',
+              label: 'DDoS攻击检测',  //修改过
               children: (
-                <div className="mt-6">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle>防御规则配置</CardTitle>
-                      <button className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                        添加规则
-                      </button>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规则ID</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规则名称</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">防御类型</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">优先级</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {[...Array(5)].map((_, i) => (
-                              <tr key={i}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {`RULE-${1000 + i}`}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {i % 5 === 0 ? 'SQL注入防御规则' : i % 5 === 1 ? 'XSS攻击防御规则' : i % 5 === 2 ? 'DDoS流量限制规则' : i % 5 === 3 ? '暴力破解防护规则' : '敏感数据保护规则'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {i % 3 === 0 ? 'Web应用防护' : i % 3 === 1 ? '网络流量防护' : '数据防护'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {i % 3 === 0 ? '高' : i % 3 === 1 ? '中' : '低'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${i % 4 === 0 ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'}`}>
-                                    {i % 4 === 0 ? '已禁用' : '已启用'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                  <div className="flex space-x-2">
-                                    <a href="#" className="text-primary-600 hover:text-primary-900">编辑</a>
-                                    <a href="#" className="text-red-600 hover:text-red-900">删除</a>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              ),
+              <Card className="mt-6">
+                <CardHeader className="flex flex-row items-center justify-between">
+                </CardHeader>
+                <CardContent>
+                  <DDoSDefenseDemo />
+                </CardContent>
+              </Card>
+            ),
             },
           ]}
         />
