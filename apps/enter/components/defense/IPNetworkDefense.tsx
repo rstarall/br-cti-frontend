@@ -1,22 +1,25 @@
 'use client';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Chart } from 'chart.js/auto';
 
-type TimelineEntry = {
-  step: string;
-  recv?: number;
-  sent?: number;
-  is_ddos?: boolean;
-  ip?: string[];
-  success?: boolean;
-  message?: string;
-  description?: string;
-  profit?: number[];
+import React, { useState, useRef, useEffect } from 'react';
+import { Button, Card } from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
+import { Chart } from 'chart.js/auto';
+import { DefenseData, TimelineEntry } from '@/store/defenseStore';
+
+interface IPNetworkDefenseProps {
+  defenseData: DefenseData | null;
+  isLoading: boolean;
+  onBack: () => void;
+  onStartDefense: () => void;
 }
 
-export default function DDoSDefenseDemo() {
+export default function IPNetworkDefense({
+  defenseData,
+  isLoading,
+  onBack,
+  onStartDefense
+}: IPNetworkDefenseProps) {
   // 状态管理
-  const [selectedFile, setSelectedFile] = useState('ip_result.jsonl');
   const [isStarted, setIsStarted] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -39,21 +42,6 @@ export default function DDoSDefenseDemo() {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
   }, [logs]);
-
-  /** 获取时间线数据 */
-  const fetchTimeline = async () => {
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:5000/ddos/ddos_ability/${encodeURIComponent(selectedFile)}`
-      );
-      if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('请求失败:', error);
-      setLogs(prev => [...prev, `❌ 请求失败: ${error instanceof Error ? error.message : '未知错误'}`]);
-      return null;
-    }
-  };
 
   /** 初始化图表 */
   const setupCharts = () => {
@@ -104,10 +92,10 @@ export default function DDoSDefenseDemo() {
           borderColor: '#DC143C',
           borderWidth: 2,
           fill: false,
-          tension: 0.4, // 添加曲线平滑
-          spanGaps: false, // 改为false确保折线连续
-        pointRadius: 3, // 添加数据点可见性
-        pointBackgroundColor: '#DC143C80' // 添加数据点颜色
+          tension: 0.4,
+          spanGaps: false,
+          pointRadius: 3,
+          pointBackgroundColor: '#DC143C80'
         }]
       },
       options: {
@@ -124,7 +112,7 @@ export default function DDoSDefenseDemo() {
         plugins: {
           tooltip: {
             callbacks: {
-              label: (context) => 
+              label: (context) =>
                 `攻击收益: ${(context.parsed.y * 100).toFixed(2)}%`
             }
           }
@@ -133,11 +121,10 @@ export default function DDoSDefenseDemo() {
     });
   };
 
-  /** 处理数据帧 */
-  // 新增的useEffect控制动画流程
-    useEffect(() => {
+  // 处理数据帧动画
+  useEffect(() => {
     let frameTimer: NodeJS.Timeout;
-    
+
     const processFrame = () => {
       if (currentIndexRef.current >= timelineRef.current.length) {
         setIsStarted(false);
@@ -162,7 +149,6 @@ export default function DDoSDefenseDemo() {
         let profitValue = Number(rawProfit) || 0;
         profitValue = Math.min(1, Math.max(0, profitValue));
 
-        
         // 更新收益图表
         profitChartRef.current?.data.labels?.push(newCount);
         profitChartRef.current?.data.datasets[0].data.push(profitValue);
@@ -174,13 +160,14 @@ export default function DDoSDefenseDemo() {
 
       // 处理日志
       const logMap = {
-      traffic_sample: '📊 流量采样更新',
-      ddos_check: `DDoS 检测结果：${frame.is_ddos ? "⚠️ 有攻击" : "✅ 无异常"}`,
-      ddos_source: `🚫 封锁恶意 IP：${frame.ip?.join(', ') || ''}，防御状态：${frame.success ? "成功" : "失败"}`,
-      detection_model: `🧠 检测模型选择动作：${frame.message}`,
-      defense_model: `🛡️ 防御模型选择动作：${frame.message}`,
-      monitor_start: `📡 监控启动：${frame.description}`
-    };
+        traffic_sample: '📊 流量采样更新',
+        ddos_check: `DDoS 检测结果：${frame.is_ddos ? "⚠️ 有攻击" : "✅ 无异常"}`,
+        ddos_source: `🚫 封锁恶意 IP：${frame.ip?.join(', ') || ''}，防御状态：${frame.success ? "成功" : "失败"}`,
+        detection_model: `🧠 检测模型选择动作：${frame.message}`,
+        defense_model: `🛡️ 防御模型选择动作：${frame.message}`,
+        monitor_start: `📡 监控启动：${frame.description}`
+      };
+
       if (frame.step in logMap) {
         setLogs(prev => [...prev.slice(-50), `[${new Date().toLocaleTimeString()}] ${logMap[frame.step as keyof typeof logMap]}`]);
       }
@@ -193,72 +180,101 @@ export default function DDoSDefenseDemo() {
     }
 
     return () => clearInterval(frameTimer);
-  }, [isStarted]); // 仅依赖 isStarted
+  }, [isStarted]);
 
-  /** 开始检测 */
-  const startDetection = async () => {
+  /** 加载检测数据并开始检测 */
+  const loadAndStartDetection = async () => {
+    // 如果没有数据，先加载数据
+    if (!defenseData) {
+      await onStartDefense();
+      // 数据加载后会自动触发重新渲染，此时 defenseData 会有值
+      return;
+    }
+
+    // 如果已有数据，直接开始检测
     setIsStarted(false);
     clearTimeout(timerRef.current);
-    
-    const response = await fetchTimeline();
-    if (!response) return;
 
     // 重置状态
     currentIndexRef.current = 0;
     trafficCountRef.current = 0;
-    timelineRef.current = response.timeline;
+    timelineRef.current = defenseData.timeline;
     setLogs([]);
-    
+
     setupCharts();
     setIsStarted(true);
   };
 
+  // 当数据加载完成后自动开始检测
+  React.useEffect(() => {
+    if (defenseData && !isStarted && timelineRef.current.length === 0) {
+      // 重置状态
+      currentIndexRef.current = 0;
+      trafficCountRef.current = 0;
+      timelineRef.current = defenseData.timeline;
+      setLogs([]);
+
+      setupCharts();
+      setIsStarted(true);
+    }
+  }, [defenseData]);
+
   return (
-    <div className="p-4 h-full overflow-auto">
-      <h2 className="text-2xl font-bold mb-6 text-center">DDoS攻击防御展示</h2>
-      
-      <div className="flex flex-col items-center gap-4 mb-8">
-        <select 
-          value={selectedFile}
-          onChange={(e) => setSelectedFile(e.target.value)}
-          className="w-64 border rounded-md px-3 py-2 text-sm"
+    <div className="p-6 h-full overflow-auto bg-gray-50">
+      <div className="max-w-6xl mx-auto">
+        {/* 返回按钮 */}
+        <Button
+          icon={<ArrowLeftOutlined />}
+          onClick={onBack}
+          className="mb-6"
         >
-          <option value="ip_result.jsonl">IP网络防御</option>
-          <option value="5g_result.jsonl">5G网络防御</option>
-          <option value="satellite_result.jsonl">卫星网络防御</option>
-        </select>
-        
-        <button
-          onClick={startDetection}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          开始检测
-        </button>
-      </div>
+          返回网络选择
+        </Button>
 
-      <div className="flex flex-col items-center gap-8 mb-8">
-        <div className="w-full max-w-4xl">
-          <h3 className="text-lg font-semibold mb-4">服务器流量收发情况</h3>
-          <canvas ref={canvasRef} className="w-full h-64" />
-        </div>
-        <div className="w-full max-w-4xl">
-          <h3 className="text-lg font-semibold mb-4">攻击收益变化趋势</h3>
-          <canvas ref={profitCanvasRef} className="w-full h-64" />
-        </div>
-      </div>
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">IP网络DDoS防御</h1>
 
-      <div className="max-w-4xl mx-auto">
-        <h3 className="text-lg font-semibold mb-4">检测过程日志</h3>
-        <div 
-          ref={logContainerRef}
-          className="border rounded-md p-4 bg-gray-50 h-48 overflow-y-auto"
-        >
-          {logs.map((log, index) => (
-            <div key={index} className="text-sm font-mono mb-2">
-              {log}
-            </div>
-          ))}
+        {/* 控制面板 */}
+        <Card className="mb-6">
+          <div className="flex flex-col items-center gap-4">
+            <Button
+              type="primary"
+              size="large"
+              onClick={loadAndStartDetection}
+              loading={isLoading}
+              disabled={isStarted}
+              className="px-8 py-2"
+            >
+              {isLoading ? '加载中...' : defenseData ? '重新开始检测' : '加载检测数据'}
+            </Button>
+          </div>
+        </Card>
+
+        {/* 图表区域 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <Card title="服务器流量收发情况" className="h-80">
+            <canvas ref={canvasRef} className="w-full h-full" />
+          </Card>
+          <Card title="攻击收益变化趋势" className="h-80">
+            <canvas ref={profitCanvasRef} className="w-full h-full" />
+          </Card>
         </div>
+
+        {/* 日志区域 */}
+        <Card title="检测过程日志">
+          <div
+            ref={logContainerRef}
+            className="bg-gray-50 p-4 rounded-md h-48 overflow-y-auto border"
+          >
+            {logs.map((log, index) => (
+              <div key={index} className="text-sm font-mono mb-2 text-gray-700">
+                {log}
+              </div>
+            ))}
+            {logs.length === 0 && (
+              <div className="text-gray-500 text-center">等待开始检测...</div>
+            )}
+          </div>
+        </Card>
       </div>
     </div>
   );

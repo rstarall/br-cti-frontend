@@ -9,10 +9,12 @@ import { Drawer } from 'antd';
 import { useWindowManager } from '@/provider/WindowManager';
 import WalletPage from '@/app/client/wallet/page';
 import WalletRegisterPage from '@/app/client/wallet_register/page';
+import { useUIConfigStore } from '@/store/uiConfigStore';
 
 export function Navigation() {
   const pathname = usePathname();
-  const { walletId, userInfo,loadWalletId,fetchUserDetailInfo } = useWalletStore();
+  const { walletId, userInfo, loadWalletId, fetchUserDetailInfo } = useWalletStore();
+  const { hideNav, initFromURL } = useUIConfigStore();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { openFramelessWindow } = useWindowManager();
@@ -26,6 +28,16 @@ export function Navigation() {
       setIsLoggedIn(false);
     }
   }, []);
+
+  // 初始化UI配置(只在平台启动时初始化1次)
+  useEffect(() => {
+    initFromURL();
+  }, []);
+
+  // 如果hideNav为true，则不渲染导航栏
+  if (hideNav) {
+    return null;
+  }
 
   // 打开钱包登录窗口
   const handleOpenWallet = (e: React.MouseEvent) => {
@@ -112,7 +124,7 @@ export function Navigation() {
   };
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white shadow-md" style={{ display: hideNav? 'none' : 'block' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
@@ -209,3 +221,5 @@ function NavLink({ href, active, children }: NavLinkProps) {
     </Link>
   );
 }
+
+

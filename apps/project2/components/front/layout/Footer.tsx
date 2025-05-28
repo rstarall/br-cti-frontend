@@ -1,7 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
+import { useUIConfigStore } from '@/store/uiConfigStore';
 
 export function Footer() {
+  const { hideFooter } = useUIConfigStore();
+  
+  // 如果hideFooter为true，则不渲染页脚
+  if (hideFooter) {
+    return null;
+  }
+  
   return (
     <footer className="bg-gray-800 text-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,3 +87,4 @@ export function Footer() {
     </footer>
   );
 }
+

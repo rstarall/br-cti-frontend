@@ -9,7 +9,7 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">关于我们</h3>
             <p className="text-gray-300 text-sm">
-              B&R威胁情报共享平台致力于打造去中心化、可信、安全的威胁情报共享生态。
+              智能博弈网络安全能力集成平台致力于打造主动性、协同性、智能化的网络安全能力生态。
             </p>
           </div>
           <div>
@@ -21,18 +21,18 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/cti-market" className="text-gray-300 hover:text-white text-sm">
-                  情报市场
+                <Link href="/discovery" className="text-gray-300 hover:text-white text-sm">
+                  未知风险发现
                 </Link>
               </li>
               <li>
-                <Link href="/model-market" className="text-gray-300 hover:text-white text-sm">
-                  模型市场
+                <Link href="/share" className="text-gray-300 hover:text-white text-sm">
+                  情报共享
                 </Link>
               </li>
               <li>
-                <Link href="/knowledge-plane" className="text-gray-300 hover:text-white text-sm">
-                  知识平面
+                <Link href="/defense" className="text-gray-300 hover:text-white text-sm">
+                  主动防御
                 </Link>
               </li>
             </ul>
