@@ -15,7 +15,7 @@ export function ClientLayout({
     <div className="flex flex-col min-h-screen">
       <Navigation />
       <main className="flex-grow">
-      <Sidebar />
+      {/* <Sidebar /> */}
         {children}
       </main>
       <Footer />

@@ -274,7 +274,7 @@ export function CTIDetail({ ctiId, className = '' }: CTIDetailProps) {
             },
             {
               key: '2',
-              label: '积分激励',
+              label: '激励机制',
               children: (
                 <div>
                   {currentCti && (

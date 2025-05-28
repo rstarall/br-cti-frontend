@@ -35,7 +35,8 @@ api.interceptors.request.use((config) => {
       config.url.includes('queryChain')||
       config.url.includes('queryBlock')||
       config.url.includes('queryUserDetailInfo')||
-      config.url.includes('queryUserOwnCTIInfos')
+      config.url.includes('queryUserOwnCTIInfos')||
+      config.url.includes('queryModelInfoWithPagination')
     ) config.baseURL = blockchainServerHost;
   } else if (config.url?.includes('/cti/') || config.url?.includes('/model/') || config.url?.includes('/ipfs/')) {
     config.baseURL = blockchainServerHost;
