@@ -80,6 +80,11 @@ export function TrafficKnowledgePlane() {
         trigger: 'item',
         formatter: '{b}: {c} ({d}%)'
       },
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        data: trafficSceneData.map(item => item.name)
+      },
       series: [
         {
           name: '应用场景',

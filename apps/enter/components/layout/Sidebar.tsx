@@ -17,19 +17,18 @@ import {
 import { cn } from '@/lib/utils';
 
 // 导入智能博弈风险发现组件
-import GameTheoryModel from '@/components/discovery/GameTheoryModel';
-import OptimalStrategy from '@/components/discovery/OptimalStrategy';
-import DefenseRulesDiscovery from '@/components/discovery/DefenseRulesDiscovery';
+// import GameTheoryModel from '@/components/discovery/GameTheoryModel';
+// import OptimalStrategy from '@/components/discovery/OptimalStrategy';
+// import DefenseRulesDiscovery from '@/components/discovery/DefenseRulesDiscovery';
 
 // 导入情报知识共享平面组件
-import IntelligenceSharing from '@/components/share/IntelligenceSharing';
-import IncentiveMechanism from '@/components/share/IncentiveMechanism';
-import ThreatSituation from '@/components/share/ThreatSituation';
+// import IntelligenceSharing from '@/components/share/IntelligenceSharing';
+// import IncentiveMechanism from '@/components/share/IncentiveMechanism';
+// import ThreatSituation from '@/components/share/ThreatSituation';
 
 // 导入未知风险主动防御组件
-import AttackMonitoring from '@/components/defense/AttackMonitoring';
-import DefenseRules from '@/components/defense/DefenseRules';
-import ActiveDefense from '@/components/defense/ActiveDefense';
+// import AttackMonitoring from '@/components/defense/AttackMonitoring';
+// import ActiveDefense from '@/components/defense/ActiveDefense';
 
 interface MenuItem {
   action: string;
