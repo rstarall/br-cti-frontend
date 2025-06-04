@@ -18,8 +18,8 @@ interface NetworkState {
 }
 
 export const useNetworkStore = create<NetworkState>((set, get) => ({
-  clientServerHost: typeof window !== 'undefined' ? localStorage.getItem('clientServerHost') || 'http://127.0.0.1:5000' : 'http://127.0.0.1:5000',
-  blockchainServerHost: typeof window !== 'undefined' ? localStorage.getItem('blockchainServerHost') || 'http://127.0.0.1:7777' : 'http://127.0.0.1:7777',
+  clientServerHost: typeof window !== 'undefined' ? localStorage.getItem('clientServerHost') || 'https://3.hb6dee21a.nyat.app:19090' : 'http://127.0.0.1:5000',
+  blockchainServerHost: typeof window !== 'undefined' ? localStorage.getItem('blockchainServerHost') || 'https://4.hb6dee21a.nyat.app:45549' : 'http://127.0.0.1:7777',
   networkMode: (typeof window !== 'undefined' ? localStorage.getItem('clientNetworkMode') as 'local' | 'remote' : 'local') || 'local',
   isConnected: false,
   isLoading: false,

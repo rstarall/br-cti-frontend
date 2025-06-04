@@ -57,8 +57,11 @@ export interface GameDiscoveryState {
 
 // API调用函数
 const callGameAPI = async (endpoint: string, data?: any) => {
-  const baseUrl = 'http://127.0.0.1:5000';
-  const url = `${baseUrl}/game/${endpoint}`;
+  // 从localStorage获取客户端服务器地址
+  const clientServerHost = typeof window !== 'undefined'
+    ? localStorage.getItem('clientServerHost') || 'http://127.0.0.1:5000'
+    : 'http://127.0.0.1:5000';
+  const url = `${clientServerHost}/game/${endpoint}`;
 
   try {
     const requestOptions: RequestInit = {

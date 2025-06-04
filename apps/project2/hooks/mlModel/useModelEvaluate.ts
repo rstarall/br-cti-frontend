@@ -134,9 +134,16 @@ export function useModelEvaluate() {
     try {
       const response = await localMLApi.getModelEvaluateImage(requestId);
       
-      if (response.code === 200 && response.data && response.data.images) {
-        setEvaluationImages(response.data.images);
-        return response.data.images;
+      if (response.code === 200 && response.data) {
+        // 将后端返回的单个图像数据转换为数组格式
+        const imageData: EvaluationImage = {
+          image_type: response.data.image_type,
+          image_data: response.data.image_base64
+        };
+        
+        const images = [imageData];
+        setEvaluationImages(images);
+        return images;
       } else {
         setEvaluationImages([]);
         return [];
@@ -171,3 +178,4 @@ export function useModelEvaluate() {
     refreshEvaluationData
   };
 }
+

@@ -43,8 +43,11 @@ export interface DefenseState {
 
 // API调用函数
 const callDefenseAPI = async (filename: string) => {
-  const baseUrl = 'http://127.0.0.1:5000';
-  const url = `${baseUrl}/ddos/ddos_ability/${encodeURIComponent(filename)}`;
+  // 从localStorage获取客户端服务器地址
+  const clientServerHost = typeof window !== 'undefined'
+    ? localStorage.getItem('clientServerHost') || 'http://127.0.0.1:5000'
+    : 'http://127.0.0.1:5000';
+  const url = `${clientServerHost}/ddos/ddos_ability/${encodeURIComponent(filename)}`;
 
   try {
     const response = await fetch(url);

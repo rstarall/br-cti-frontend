@@ -3,11 +3,15 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Drawer } from 'antd';
+import { Drawer, Button } from 'antd';
+import { SettingOutlined } from '@ant-design/icons';
+import { useWindowManager } from '@/provider/WindowManager';
+import NetworkComponent from '@/components/network/network';
 
 export function Navigation() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { openWindow } = useWindowManager();
 
   const navLinks = [
     { href: "/", label: "首页", active: pathname === '/' },
@@ -18,6 +22,15 @@ export function Navigation() {
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const openNetworkConfig = () => {
+    openWindow(
+      '网络配置',
+      <NetworkComponent />,
+      '600px',
+      '500px'
+    );
   };
 
   return (
@@ -39,18 +52,30 @@ export function Navigation() {
             </div>
           </div>
 
-          {/* 移动端菜单按钮 */}
-          <div className="flex items-center sm:hidden">
-            <button
-              onClick={toggleMobileMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-              aria-expanded={mobileMenuOpen}
-            >
-              <span className="sr-only">打开菜单</span>
-              <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+          {/* 右侧按钮区域 */}
+          <div className="flex items-center space-x-4">
+            {/* 网络配置按钮 */}
+            <Button
+              type="text"
+              icon={<SettingOutlined />}
+              onClick={openNetworkConfig}
+              className="hidden sm:flex items-center"
+              title="网络配置"
+            />
+
+            {/* 移动端菜单按钮 */}
+            <div className="flex items-center sm:hidden">
+              <button
+                onClick={toggleMobileMenu}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                aria-expanded={mobileMenuOpen}
+              >
+                <span className="sr-only">打开菜单</span>
+                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

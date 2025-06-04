@@ -183,13 +183,10 @@ export interface ModelTrainDetailResponse {
  */
 export interface ModelEvaluateImageResponse {
   code: number;
-  message: string;
+  msg: string;
   data: {
-    request_id: string;
-    images: {
-      image_type: string;
-      image_data: string; // Base64 encoded image
-    }[];
+    image_base64: string; // Base64 encoded image
+    image_type: string;
   };
 }
 
@@ -320,3 +317,4 @@ export interface ApiResponse {
   data?: any;
   error?: string;
 }
+

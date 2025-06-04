@@ -63,12 +63,19 @@ export function IncentivePanel({
         );
       case 3:
         return (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center space-y-4">
             <Image
-              src="/images/incentive/common-incentive.png"
+              src="/images/incentive/evolutionary-incentive-1.png"
               alt="演化博弈机制"
               width={600}
-              height={400}
+              height={300}
+              className="max-w-full h-auto"
+            />
+            <Image
+              src="/images/incentive/evolutionary-incentive-2.png"
+              alt="演化博弈机制"
+              width={600}
+              height={300}
               className="max-w-full h-auto"
             />
           </div>

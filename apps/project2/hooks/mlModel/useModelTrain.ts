@@ -182,8 +182,14 @@ export function useModelTrain() {
     try {
       const response = await localMLApi.getModelEvaluateImage(requestId);
 
-      if (response.code === 200 && response.data && response.data.images) {
-        return response.data.images;
+      if (response.code === 200 && response.data) {
+        // 将后端返回的单个图像数据转换为数组格式
+        const imageData = {
+          image_type: response.data.image_type,
+          image_data: response.data.image_base64
+        };
+        
+        return [imageData];
       } else {
         return [];
       }
@@ -205,3 +211,4 @@ export function useModelTrain() {
     getModelEvaluateImage
   };
 }
+

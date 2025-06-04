@@ -10,7 +10,7 @@ export default function DiscoveryPage() {
   return (
     <div className="py-2">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-1">
+        <div className="text-center mb-1  mt-3">
           <h1 className="text-3xl font-bold text-gray-900">智能博弈风险发现</h1>
           <p className="mt-2 text-lg text-gray-600">
             通过智能博弈技术主动发现网络安全风险，提前预警潜在威胁

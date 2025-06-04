@@ -16,9 +16,12 @@ const api = axios.create({
  */
 api.interceptors.request.use((config) => {
   // Get server hosts from localStorage with defaults
-  const clientServerHost = getLocalStorageItem('clientServerHost', 'http://127.0.0.1:5000');
-  const blockchainServerHost = getLocalStorageItem('blockchainServerHost', 'http://127.0.0.1:7777');
-
+  // const clientServerHost = getLocalStorageItem('clientServerHost', 'http://127.0.0.1:5000');
+  const clientServerHost = getLocalStorageItem('clientServerHost', 'https://3.hb6dee21a.nyat.app:19090');
+  
+  // const blockchainServerHost = getLocalStorageItem('blockchainServerHost', 'http://127.0.0.1:7777');
+  const blockchainServerHost = getLocalStorageItem('blockchainServerHost', 'https://4.hb6dee21a.nyat.app:45549');
+  
   // Log the original request URL
   console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
 

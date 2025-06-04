@@ -22,13 +22,13 @@ function resizeIframe(frameId: string) {
     console.log('无法访问iframe内容，可能是跨域限制');
   }
 }
-
+const ctiFrontendHost = typeof window !== 'undefined' ? localStorage.getItem('ctiFrontendHost') || 'https://2.hb6dee21a.nyat.app:28607' : 'http://127.0.0.1:3001';
 export function CtiShare() {
   return (
     <div className="h-full w-full flex justify-center">
        <iframe
           id="shareFrame"
-          src="http://localhost:3001/client/local-data?hideNav=true&hideFooter=true"
+          src={ctiFrontendHost + "/client/local-data?hideNav=true&hideFooter=true"}
           title="情报共享"
           width="90%"
           height="800px"
@@ -44,7 +44,7 @@ export function CtiMarket() {
     <div className="p-4 w-full">
       <iframe
          id="marketFrame"
-         src="http://localhost:3001/cti-market?hideNav=true&hideFooter=true"
+         src={ctiFrontendHost + "/cti-market?hideNav=true&hideFooter=true"}
          title="情报市场"
          width="100%"
          height="1800px"
@@ -60,7 +60,7 @@ export function CtiIncentive() {
     <div className="p-4 w-full">
       <iframe
         id="incentiveFrame"
-        src="http://localhost:3001/client/incentive?hideNav=true&hideFooter=true"
+        src= {ctiFrontendHost + "/client/incentive?hideNav=true&hideFooter=true"}
         title="激励机制"
         width="100%"
         height="1300px"
@@ -76,7 +76,7 @@ export function CtiKP() {
     <div className="p-4 w-full">
       <iframe 
         id="kpFrame"
-        src="http://localhost:3001/knowledge-plane?hideNav=true&hideFooter=true"
+        src= {ctiFrontendHost + "/knowledge-plane?hideNav=true&hideFooter=true"}
         title="知识平面"
         width="100%" 
         height="1500px"
