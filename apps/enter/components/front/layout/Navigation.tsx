@@ -28,8 +28,8 @@ export function Navigation() {
     openWindow(
       '网络配置',
       <NetworkComponent />,
-      '600px',
-      '500px'
+      '800px',
+      '650px'
     );
   };
 

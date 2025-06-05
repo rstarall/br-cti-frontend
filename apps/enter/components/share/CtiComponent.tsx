@@ -22,7 +22,19 @@ function resizeIframe(frameId: string) {
     console.log('无法访问iframe内容，可能是跨域限制');
   }
 }
-const ctiFrontendHost = typeof window !== 'undefined' ? localStorage.getItem('ctiFrontendHost') || 'https://2.hb6dee21a.nyat.app:28607' : 'http://127.0.0.1:3001';
+
+
+const getCtiFrontendHost = () => {
+  //判断当前页面域名是否为local
+  if (typeof window !== 'undefined') {
+    if(window.location.hostname.includes('localhost')||window.location.hostname.includes('127.0.0.1'))
+    return 'http://127.0.0.1:3001';
+  }
+  return typeof window !== 'undefined' ? localStorage.getItem('ctiFrontendHost') || 'https://2.hb6dee21a.nyat.app:28607' : 'http://127.0.0.1:3001';
+};
+
+const ctiFrontendHost = getCtiFrontendHost();
+
 export function CtiShare() {
   return (
     <div className="h-full w-full flex justify-center">
