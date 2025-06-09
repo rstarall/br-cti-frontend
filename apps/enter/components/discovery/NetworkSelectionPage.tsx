@@ -10,7 +10,7 @@ interface NetworkSelectionPageProps {
 export default function NetworkSelectionPage({ onNetworkSelect }: NetworkSelectionPageProps) {
   return (
     <div className="max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">网络选择</h1>
+      <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">博弈模型选择</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* IP网络卡片 */}
@@ -30,7 +30,7 @@ export default function NetworkSelectionPage({ onNetworkSelect }: NetworkSelecti
           onClick={() => onNetworkSelect('ip')}
         >
           <Card.Meta
-            title={<h2 className="text-xl font-bold text-gray-800">IP网络</h2>}
+            title={<h2 className="text-xl font-bold text-gray-800">端网协同防御</h2>}
             description={
               <div>
                 <h3 className="font-semibold text-gray-700 mb-2">防御者静态过滤博弈</h3>
@@ -60,10 +60,10 @@ export default function NetworkSelectionPage({ onNetworkSelect }: NetworkSelecti
           onClick={() => onNetworkSelect('5g')}
         >
           <Card.Meta
-            title={<h2 className="text-xl font-bold text-gray-800">5G网络</h2>}
+            title={<h2 className="text-xl font-bold text-gray-800">攻防对抗动态博弈</h2>}
             description={
               <div>
-                <h3 className="font-semibold text-gray-700 mb-2">动态攻防博弈</h3>
+                <h3 className="font-semibold text-gray-700 mb-2">动态Stackelberg攻防博弈</h3>
                 <p className="text-gray-600 mb-4">利用攻防动态博弈分析双方收益</p>
                 <Button type="primary" className="w-full">
                   了解更多
@@ -90,7 +90,7 @@ export default function NetworkSelectionPage({ onNetworkSelect }: NetworkSelecti
           onClick={() => onNetworkSelect('satellite')}
         >
           <Card.Meta
-            title={<h2 className="text-xl font-bold text-gray-800">卫星网络</h2>}
+            title={<h2 className="text-xl font-bold text-gray-800">智能博弈风险抑制</h2>}
             description={
               <div>
                 <h3 className="font-semibold text-gray-700 mb-2">平均场动态博弈</h3>

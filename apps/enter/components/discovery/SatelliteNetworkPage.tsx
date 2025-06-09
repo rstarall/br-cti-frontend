@@ -23,11 +23,11 @@ export default function SatelliteNetworkPage({ satelliteData, isLoading, onBack,
         >
           返回网络选择
         </Button>
-        <h1 className="text-2xl font-bold text-gray-800">卫星网络平均场动态博弈</h1>
+        <h1 className="text-2xl font-bold text-gray-800">DDoS平均场动态博弈</h1>
       </div>
 
       {/* 卫星系统模型概览 */}
-      <Card title="卫星网络系统模型" className="mb-3">
+      <Card title="网络及博弈系统模型" className="mb-3">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 系统模型图 */}
           <div className="lg:col-span-2">

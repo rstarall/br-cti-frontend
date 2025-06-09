@@ -29,7 +29,7 @@ export default function IPNetworkPage({ ipData, isLoading, onBack, onSubmit }: I
         >
           返回网络选择
         </Button>
-        <h1 className="text-2xl font-bold text-gray-800">IP网络静态协同DDoS博弈</h1>
+        <h1 className="text-2xl font-bold text-gray-800">静态协同DDOS博弈</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

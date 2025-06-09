@@ -29,7 +29,7 @@ export default function FiveGNetworkPage({ fiveGData, isLoading, onBack, onSubmi
         >
           返回网络选择
         </Button>
-        <h1 className="text-2xl font-bold text-gray-800">5G网络DDoS攻防动态博弈</h1>
+        <h1 className="text-2xl font-bold text-gray-800">DDoS攻防动态Stackelberg博弈</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
