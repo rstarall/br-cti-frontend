@@ -22,6 +22,8 @@ export default function SatelliteNetworkDefense({
   // 状态管理
   const [isStarted, setIsStarted] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+  const [satelliteConnected, setSatelliteConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   // 图表引用
   const flowChartRef = useRef<Chart<'line'> | null>(null);
@@ -182,6 +184,18 @@ export default function SatelliteNetworkDefense({
     return () => clearInterval(frameTimer);
   }, [isStarted]);
 
+  /** 接入卫星网络 */
+  const connectToSatellite = () => {
+    setIsConnecting(true);
+    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] 🛰️ 正在接入卫星网络...`]);
+
+    setTimeout(() => {
+      setSatelliteConnected(true);
+      setIsConnecting(false);
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ 已成功接入模拟卫星网络`]);
+    }, 2500);
+  };
+
   /** 加载检测数据并开始检测 */
   const loadAndStartDetection = async () => {
     // 如果没有数据，先加载数据
@@ -236,16 +250,57 @@ export default function SatelliteNetworkDefense({
         {/* 控制面板 */}
         <Card className="mb-6">
           <div className="flex flex-col items-center gap-4">
-            <Button
-              type="primary"
-              size="large"
-              onClick={loadAndStartDetection}
-              loading={isLoading}
-              disabled={isStarted}
-              className="px-8 py-2"
-            >
-              {isLoading ? '加载中...' : defenseData ? '重新开始检测' : '加载检测数据'}
-            </Button>
+            {/* 卫星网络接入状态 */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                satelliteConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+              }`}>
+                <span className="text-lg">🛰️</span>
+                <span className="font-medium">
+                  {satelliteConnected ? '已接入模拟卫星网络' : '未接入卫星网络'}
+                </span>
+              </div>
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="flex gap-4">
+              {!satelliteConnected && (
+                <Button
+                  type="default"
+                  size="large"
+                  onClick={connectToSatellite}
+                  loading={isConnecting}
+                  className="px-8 py-2"
+                >
+                  {isConnecting ? (
+                    <>
+                      正在接入模拟卫星网络
+                      <span className="ml-2 inline-block animate-spin">⚡</span>
+                    </>
+                  ) : (
+                    '🛰️ 接入卫星网络'
+                  )}
+                </Button>
+              )}
+
+              <Button
+                type="primary"
+                size="large"
+                onClick={loadAndStartDetection}
+                loading={isLoading}
+                disabled={isStarted || !satelliteConnected}
+                className="px-8 py-2"
+              >
+                {isLoading ? '加载中...' : defenseData ? '重新开始检测' : '加载检测数据'}
+              </Button>
+            </div>
+
+            {/* 提示信息 */}
+            {!satelliteConnected && (
+              <div className="text-sm text-gray-500 text-center">
+                请先接入卫星网络后再开始检测
+              </div>
+            )}
           </div>
         </Card>
 

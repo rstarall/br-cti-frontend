@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { localMLApi } from '@/api/localML';
 import { useLocalMLStore } from '@/store/localMLStore';
+import { getLocalStorageItem } from '@/lib/utils';
 import { message } from 'antd';
 
 export function useModelUpload() {
@@ -128,7 +129,8 @@ export function useModelUpload() {
 
     const checkProgress = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/ml/get_download_progress`, {
+        const clientServerHost = getLocalStorageItem('clientServerHost', 'http://127.0.0.1:5000');
+        const response = await fetch(`${clientServerHost}/ml/get_download_progress`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { localMLApi } from '@/api/localML';
 import { useLocalMLStore } from '@/store/localMLStore';
+import { getLocalStorageItem } from '@/lib/utils';
 import { message } from 'antd';
 
 export function useModelUpchain() {
@@ -10,15 +11,16 @@ export function useModelUpchain() {
 
   const getIPFSAddress = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/upchain/getIPFSAddress`, {
+      const clientServerHost = getLocalStorageItem('clientServerHost', 'http://127.0.0.1:5000');
+      const response = await fetch(`${clientServerHost}/upchain/getIPFSAddress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
+
       const data = await response.json();
-      
+
       if (data.code === 200 && data.data) {
         return data.data.ipfs_address;
       } else {
@@ -80,7 +82,7 @@ export function useModelUpchain() {
         return { success: true };
       } else {
         setIsUpchaining(false);
-        message.error({ content: response.error || '上链失败', key: messageKey });
+        message.error({ content: response.message || '上链失败', key: messageKey });
         return { success: false };
       }
     } catch (error) {

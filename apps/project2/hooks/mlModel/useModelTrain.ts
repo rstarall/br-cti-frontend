@@ -19,21 +19,13 @@ export function useModelTrain() {
 
   const getFeatureList = async (fileHash: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/ml/get_feature_list`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_hash: fileHash })
-      });
+      const response = await localMLApi.getFeatureList(fileHash);
 
-      const data = await response.json();
-
-      if (data.code === 200 && data.data) {
+      if (response.code === 200 && response.data) {
         // 返回特征列表（分号分隔的字符串）
-        return data.data;
+        return response.data;
       } else {
-        message.error(data.error || '获取特征列表失败');
+        message.error(response.error || '获取特征列表失败');
         return '';
       }
     } catch (error) {

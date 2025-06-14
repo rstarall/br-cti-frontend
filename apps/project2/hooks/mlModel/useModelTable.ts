@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { localMLApi } from '@/api/localML';
+import { getLocalStorageItem } from '@/lib/utils';
 import { message } from 'antd';
 
 interface ModelRecord {
@@ -37,23 +39,15 @@ export function useModelTable() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/ml/get_model_record_list_by_hash`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_hash: fileHash })
-      });
+      const response = await localMLApi.getModelRecordListByHash(fileHash);
 
-      const data = await response.json();
-
-      if (data.code === 200 && Array.isArray(data.data)) {
+      if (response.code === 200 && Array.isArray(response.data)) {
         // 处理数据
-        const records = processModelRecords(data.data);
+        const records = processModelRecords(response.data);
         setModelRecords(records);
         setTotalCount(records.length);
       } else {
-        console.error('Failed to fetch model records:', data.error || 'Unknown error');
+        console.error('Failed to fetch model records:', response.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Error fetching model records:', error);
@@ -127,7 +121,8 @@ export function useModelTable() {
 
   // 获取模型详情
   const showModelDetail = (modelHash: string, sourceHash: string) => {
-    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/ml/get_model_file_content/${sourceHash}/${modelHash}`;
+    const clientServerHost = getLocalStorageItem('clientServerHost', 'http://127.0.0.1:5000');
+    const url = `${clientServerHost}/ml/get_model_file_content/${sourceHash}/${modelHash}`;
     window.open(url, '_blank');
   };
 
