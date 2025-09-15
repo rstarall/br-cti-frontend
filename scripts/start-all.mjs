@@ -5,6 +5,7 @@ const apps = [
   { name: 'enter', port: 3000 },
   { name: 'project2', port: 3001 },
   { name: 'data-view', port: 8081 },
+  { name: 'qa-system', port: 3002 },
 ];
 
 apps.forEach(({ name, port }) => {
