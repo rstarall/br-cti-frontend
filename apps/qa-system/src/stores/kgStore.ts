@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 
 // 后端API基础URL
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = '/api';
 
 interface GraphNode {
     id: string;
@@ -60,7 +60,16 @@ interface KGStore {
             entityTypes?: string | string[];
             kgdbName?: string;
         }
-    ) => Promise<{ success: boolean; message: string; entities_count?: number; relationships_count?: number }>;
+    ) => Promise<{ success: boolean; message: string; task_id?: string }>;
+
+    // 异步任务：查询任务状态
+    getExtractEntitiesTaskStatus: (taskId: string) => Promise<{ status: string; progress?: number; message?: string }>;
+
+    // 异步任务：获取任务结果
+    getExtractEntitiesTaskResult: (taskId: string) => Promise<any>;
+
+    // 清空图数据库
+    deleteAll: () => Promise<{ success: boolean; message: string }>;
 
     // 为未索引节点添加索引
     indexNodes: () => Promise<{ success: boolean; message: string }>;
@@ -84,7 +93,7 @@ export const useKGStore = create<KGStore>((set, get) => ({
             console.log('开始获取图谱信息');
             const response = await fetch(`${API_BASE_URL}/graph/info`, {
                 method: 'GET',
-                credentials: 'include'
+
             });
 
             console.log('图谱信息API响应状态:', response.status);
@@ -126,7 +135,7 @@ export const useKGStore = create<KGStore>((set, get) => ({
             console.log(`开始获取${num}个图谱节点`);
             const response = await fetch(`${API_BASE_URL}/graph/nodes?kgdb_name=neo4j&num=${num}`, {
                 method: 'GET',
-                credentials: 'include'
+
             });
 
             console.log('图谱节点API响应状态:', response.status);
@@ -214,7 +223,7 @@ export const useKGStore = create<KGStore>((set, get) => ({
             console.log(`开始搜索实体: ${entityName}`);
             const response = await fetch(`${API_BASE_URL}/graph/node?entity_name=${encodeURIComponent(entityName)}`, {
                 method: 'GET',
-                credentials: 'include'
+
             });
 
             if (!response.ok) {
@@ -294,7 +303,7 @@ export const useKGStore = create<KGStore>((set, get) => ({
             console.log('检查数据库状态');
             const response = await fetch(`${API_BASE_URL}/graph/indexer-status`, {
                 method: 'GET',
-                credentials: 'include'
+
             });
 
             console.log('数据库状态检查响应:', response.status);
@@ -319,11 +328,11 @@ export const useKGStore = create<KGStore>((set, get) => ({
     ) => {
         set({ isLoading: true, error: null });
         try {
-            console.log('开始通过文件上传添加实体:', file?.name);
+            console.log('提交实体提取异步任务:', file?.name);
 
             const formData = new FormData();
             formData.append('file', file);
-            // 自动语言检测：如果未显式传入 language，则读取文件前段进行简单判断
+            // 自动语言检测
             let langToUse = options?.language;
             if (!langToUse) {
                 try {
@@ -331,7 +340,6 @@ export const useKGStore = create<KGStore>((set, get) => ({
                     const hasCJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(sampleText);
                     langToUse = hasCJK ? 'chinese' : 'english';
                 } catch (e) {
-                    // 回退为 chinese，以与原先默认保持一致
                     langToUse = 'chinese';
                 }
             }
@@ -343,29 +351,28 @@ export const useKGStore = create<KGStore>((set, get) => ({
             }
             formData.append('kgdb_name', options?.kgdbName ?? 'neo4j');
 
-            const response = await fetch(`${API_BASE_URL}/graph/extract-entities-from-file`, {
+            const response = await fetch(`${API_BASE_URL}/graph/extract-entities-task`, {
                 method: 'POST',
                 body: formData
             });
 
             if (!response.ok) {
-                let message = `添加实体失败: ${response.status}`;
+                let message = `创建任务失败: ${response.status}`;
                 try {
                     const errorData = await response.json();
-                    message = errorData.message || message;
+                    message = errorData.detail || errorData.message || message;
                 } catch { }
                 throw new Error(message);
             }
 
             const data = await response.json();
-            console.log('添加实体结果:', data);
+            console.log('任务创建结果:', data);
 
             set({ isLoading: false });
             return {
-                success: data.status === 'success',
-                message: data.message,
-                entities_count: data.entities_count,
-                relationships_count: data.relationships_count
+                success: true,
+                message: '任务已创建，后台处理中',
+                task_id: data.task_id
             };
         } catch (error: any) {
             console.error('添加实体错误:', error);
@@ -375,8 +382,64 @@ export const useKGStore = create<KGStore>((set, get) => ({
             });
             return {
                 success: false,
-                message: error.message || '添加实体失败'
+                message: error.message || '创建任务失败'
             };
+        }
+    },
+
+    getExtractEntitiesTaskStatus: async (taskId: string) => {
+        try {
+            const resp = await fetch(`${API_BASE_URL}/graph/extract-entities-task/status?task_id=${encodeURIComponent(taskId)}`, {
+                method: 'GET'
+            });
+            if (!resp.ok) {
+                throw new Error(`查询任务状态失败: ${resp.status}`);
+            }
+            const data = await resp.json();
+            return { status: data.status, progress: data.progress, message: data.message };
+        } catch (err: any) {
+            return { status: 'error', message: err.message };
+        }
+    },
+
+    getExtractEntitiesTaskResult: async (taskId: string) => {
+        try {
+            const resp = await fetch(`${API_BASE_URL}/graph/extract-entities-task/result?task_id=${encodeURIComponent(taskId)}`, {
+                method: 'GET'
+            });
+            if (!resp.ok) {
+                throw new Error(`获取任务结果失败: ${resp.status}`);
+            }
+            return await resp.json();
+        } catch (err: any) {
+            return { status: 'error', message: err.message };
+        }
+    },
+
+    deleteAll: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const resp = await fetch(`${API_BASE_URL}/graph/delete-all`, {
+                method: 'POST'
+            });
+            if (!resp.ok) {
+                let msg = `清空失败: ${resp.status}`;
+                try {
+                    const e = await resp.json();
+                    msg = e.message || e.detail || msg;
+                } catch { }
+                throw new Error(msg);
+            }
+            const data = await resp.json().catch(() => ({}));
+            // 清空本地画布数据
+            set({
+                isLoading: false,
+                graphData: { nodes: [], edges: [] }
+            });
+            return { success: true, message: data.message || '已清空' };
+        } catch (err: any) {
+            set({ isLoading: false, error: err.message || '清空失败' });
+            return { success: false, message: err.message || '清空失败' };
         }
     },
 

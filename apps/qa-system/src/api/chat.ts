@@ -23,7 +23,7 @@ export class ChatAPI {
     onComplete: () => void
   ): Promise<void> {
     return createStreamRequest(
-      '/chat/',
+      '/chat/stream',
       request,
       onChunk,
       onError,

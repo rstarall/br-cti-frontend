@@ -46,7 +46,7 @@ export type ChatState = {
 const useStore = create<ChatState>()(
   persist(
     (set, get) => ({
-      apiUrl: 'http://localhost:8000/chat/stream',
+      apiUrl: 'http://172.22.232.42:8006/chat/stream',
       conversationHistory: {},
       conversationMessageHistory: {},
       currentConversationId: '',
@@ -213,7 +213,7 @@ const useStore = create<ChatState>()(
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+            
             body: JSON.stringify({
               message: input,
               conversation_id: conversationId,

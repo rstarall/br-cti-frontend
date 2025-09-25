@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import type { BubbleProps } from '@ant-design/x';
 import { XProvider, Bubble, Sender } from '@ant-design/x';
-import { Avatar, Typography, message, Select, Tag, Dropdown, Button } from 'antd';
+import { Avatar, Typography, message, Select, Tag, Dropdown, Button, Switch } from 'antd';
 import { DeleteOutlined, DatabaseOutlined, PartitionOutlined, CaretDownOutlined } from '@ant-design/icons';
 import { useChatStore, Message } from '../stores/chatStore';
 import { useKnowledgeStore } from '../stores/knowledgeStore';
@@ -18,6 +18,18 @@ const MemoizedMarkdownRenderer = memo(({ content }: { content: string }) => (
     <MarkdownRenderer content={content} />
   </Typography>
 ));
+
+// // Thinking 组件
+// const ThinkingComponent = memo(() => (
+//   <div className="flex items-center gap-2 text-gray-500">
+//     <div className="flex space-x-1">
+//       <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+//       <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
+//       <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
+//     </div>
+//     <span className="text-sm">Thinking...</span>
+//   </div>
+// ));
 
 const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
   const [value, setValue] = useState('');
@@ -154,6 +166,11 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
     setMeta({ use_graph: checked });
   };
 
+  // 处理 Web 搜索开关
+  const handleWebSearchToggle = (checked: boolean) => {
+    setMeta({ use_web: checked });
+  };
+
   // 处理模型提供商选择
   const handleProviderChange = async (provider: string) => {
     setMeta({ model_provider: provider, model_name: '' });
@@ -216,6 +233,11 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
       if (msg?.retrieved_docs && msg.retrieved_docs.length > 0) {
         console.log('渲染召回文档:', msg.retrieved_docs);
       }
+
+      // // 如果是思考状态，显示Thinking组件
+      // if (content === '🤔 Thinking...' && msg?.loading) {
+      //   return <ThinkingComponent />;
+      // }
 
       return (
         <div>
@@ -345,6 +367,17 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
           className="fixed bottom-[0] right-0 bg-white"
           style={{ padding: '10px', borderTop: '1px solid #eee', width: `calc(100% - ${siderWidth}px)` }}
         >
+          {/* Web 搜索开关（位于输入框上方） */}
+          <div className="mb-2 flex items-center gap-2">
+            <Switch
+              checked={!!meta.use_web}
+              onChange={handleWebSearchToggle}
+            />
+            <span className="text-sm text-gray-700">开启 Web 搜索</span>
+            {meta.use_web && (
+              <Tag color="green">已开启</Tag>
+            )}
+          </div>
           {/* Agent显示 */}
           {selectedAgentId && agents.find(a => a.id === selectedAgentId) && (
             <div className='flex items-center gap-2 mb-2'>

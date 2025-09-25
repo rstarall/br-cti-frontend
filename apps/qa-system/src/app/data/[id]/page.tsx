@@ -82,6 +82,8 @@ const getFileName = (filePath: string) => {
     return parts[parts.length - 1];
 };
 
+const apiUrl = '/api';
+
 export default function KnowledgeDetailPage() {
     const { id } = useParams();
     const router = useRouter();
@@ -210,7 +212,7 @@ export default function KnowledgeDetailPage() {
     const uploadProps: UploadProps = {
         name: 'file',
         multiple: true,
-        action: `http://localhost:8000/data/upload?db_id=${databaseId}`,
+        action: `${apiUrl}/data/upload?db_id=${databaseId}`,
         headers: {
             authorization: 'authorization-text',
         },
@@ -273,12 +275,11 @@ export default function KnowledgeDetailPage() {
         setUrlLoading(true);
         try {
             // 调用API上传URL - 现在databaseId就是db_id
-            const response = await fetch('http://localhost:8000/data/add-by-url', {
+            const response = await fetch(`${apiUrl}/data/add-by-url`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                credentials: 'include',
                 body: JSON.stringify({
                     db_id: databaseId,
                     url: urlInput
@@ -716,23 +717,31 @@ export default function KnowledgeDetailPage() {
                             <div className="mt-4">
                                 <Typography.Title level={5}>检索结果</Typography.Title>
                                 <div className="bg-gray-50 p-4 rounded-md">
-                                    <Typography.Title level={5}>回答：</Typography.Title>
+                                    {/* <Typography.Title level={5}>回答：</Typography.Title>
                                     <Typography.Paragraph>
-                                        {queryResult.answer || '未找到匹配结果'}
-                                    </Typography.Paragraph>
+                                        {queryResult.message || queryResult.answer || '未找到匹配结果'}
+                                    </Typography.Paragraph> */}
 
-                                    {queryResult.references && queryResult.references.length > 0 && (
+                                    {queryResult.results && queryResult.results.length > 0 && (
                                         <>
-                                            <Typography.Title level={5} className="mt-4">参考来源：</Typography.Title>
+                                            <Typography.Title level={5} className="mt-4">相关文档：</Typography.Title>
                                             <ul className="pl-5 list-disc">
-                                                {queryResult.references.map((ref: any, index: number) => (
+                                                {queryResult.results.map((result: any, index: number) => (
                                                     <li key={index} className="mb-2">
                                                         <div>
-                                                            <strong>来源：</strong> {ref.source || '未知'}
+                                                            <strong>来源：</strong> {result.file?.filename || '未知文件'}
                                                         </div>
-                                                        {ref.text && (
-                                                            <div className="bg-white p-2 rounded-md border mt-1">
-                                                                {ref.text}
+                                                        <div className="text-sm text-gray-500 mb-1">
+                                                            相似度：{(result.distance * 100).toFixed(1)}% | 重排序分数：{result.rerank_score?.toFixed(3)}
+                                                        </div>
+                                                        {result.entity?.text && (
+                                                            <div className="bg-white p-2 rounded-md border mt-1 max-h-40 overflow-y-auto">
+                                                                <div className="text-sm whitespace-pre-wrap">
+                                                                    {result.entity.text.length > 500
+                                                                        ? result.entity.text.substring(0, 500) + '...'
+                                                                        : result.entity.text
+                                                                    }
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </li>

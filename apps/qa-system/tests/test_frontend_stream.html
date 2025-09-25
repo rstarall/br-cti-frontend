@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,12 +12,14 @@
             margin: 0 auto;
             padding: 20px;
         }
+
         .test-section {
             border: 1px solid #ddd;
             margin: 20px 0;
             padding: 15px;
             border-radius: 5px;
         }
+
         .log {
             background: #f5f5f5;
             padding: 10px;
@@ -26,6 +29,7 @@
             max-height: 300px;
             overflow-y: auto;
         }
+
         .button {
             background: #007bff;
             color: white;
@@ -35,19 +39,37 @@
             cursor: pointer;
             margin: 5px;
         }
+
         .button:hover {
             background: #0056b3;
         }
+
         .status {
             padding: 5px 10px;
             border-radius: 3px;
             margin: 5px 0;
         }
-        .status.searching { background: #fff3cd; }
-        .status.generating { background: #d4edda; }
-        .status.loading { background: #cce5ff; }
-        .status.finished { background: #d1ecf1; }
-        .status.error { background: #f8d7da; }
+
+        .status.searching {
+            background: #fff3cd;
+        }
+
+        .status.generating {
+            background: #d4edda;
+        }
+
+        .status.loading {
+            background: #cce5ff;
+        }
+
+        .status.finished {
+            background: #d1ecf1;
+        }
+
+        .status.error {
+            background: #f8d7da;
+        }
+
         .retrieved-docs {
             background: #e7f3ff;
             border: 1px solid #b3d9ff;
@@ -55,6 +77,7 @@
             margin: 10px 0;
             border-radius: 3px;
         }
+
         .doc-item {
             background: white;
             padding: 8px;
@@ -64,9 +87,10 @@
         }
     </style>
 </head>
+
 <body>
     <h1>前端流式输出测试</h1>
-    
+
     <div class="test-section">
         <h2>测试配置</h2>
         <div>
@@ -91,7 +115,8 @@
 
     <div class="test-section">
         <h2>流式内容</h2>
-        <div id="streamContent" style="border: 1px solid #ddd; padding: 10px; min-height: 100px; background: white;"></div>
+        <div id="streamContent" style="border: 1px solid #ddd; padding: 10px; min-height: 100px; background: white;">
+        </div>
     </div>
 
     <div class="test-section">
@@ -101,31 +126,31 @@
 
     <script>
         let streamContent = '';
-        
+
         function log(message) {
             const logElement = document.getElementById('log');
             const timestamp = new Date().toLocaleTimeString();
             logElement.textContent += `[${timestamp}] ${message}\n`;
             logElement.scrollTop = logElement.scrollHeight;
         }
-        
+
         function updateStatus(status, data = {}) {
             const statusElement = document.getElementById('currentStatus');
             statusElement.className = `status ${status}`;
             statusElement.textContent = `状态: ${status}`;
-            
+
             if (data.message) {
                 statusElement.textContent += ` - ${data.message}`;
             }
         }
-        
+
         function displayRetrievedDocs(docs) {
             const docsElement = document.getElementById('retrievedDocs');
             if (!docs || docs.length === 0) {
                 docsElement.innerHTML = '';
                 return;
             }
-            
+
             let html = '<div class="retrieved-docs"><h3>召回文档信息</h3>';
             docs.forEach((doc, index) => {
                 html += `<div class="doc-item">
@@ -137,11 +162,11 @@
             html += '</div>';
             docsElement.innerHTML = html;
         }
-        
+
         function updateStreamContent(content) {
             document.getElementById('streamContent').textContent = content;
         }
-        
+
         function clearLog() {
             document.getElementById('log').textContent = '';
             document.getElementById('streamContent').textContent = '';
@@ -149,101 +174,101 @@
             document.getElementById('currentStatus').textContent = '等待测试...';
             streamContent = '';
         }
-        
+
         async function testStreamRequest() {
             const query = document.getElementById('queryInput').value;
             const useGraph = document.getElementById('useGraph').checked;
             const dbId = document.getElementById('dbId').value;
-            
+
             if (!query.trim()) {
                 alert('请输入查询内容');
                 return;
             }
-            
+
             clearLog();
             streamContent = '';
-            
+
             const requestData = {
                 query: query,
                 meta: {},
                 thread_id: 'test_' + Date.now()
             };
-            
+
             if (useGraph) {
                 requestData.meta.use_graph = true;
             }
             if (dbId.trim()) {
                 requestData.meta.db_id = dbId.trim();
             }
-            
+
             log(`开始测试流式请求`);
             log(`请求数据: ${JSON.stringify(requestData, null, 2)}`);
-            
+
             try {
-                const response = await fetch('http://localhost:8000/chat/', {
+                const response = await fetch('http://http://172.22.232.42:8006/chat/stream', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(requestData)
                 });
-                
+
                 log(`响应状态: ${response.status} ${response.statusText}`);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const reader = response.body?.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
-                
+
                 while (reader) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    
+
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n');
                     buffer = lines.pop() || '';
-                    
+
                     for (const line of lines) {
                         if (!line.trim()) continue;
-                        
+
                         log(`原始数据: ${line}`);
-                        
+
                         // 处理SSE格式
                         if (line.startsWith('data: ')) {
                             const jsonStr = line.substring(6);
                             try {
                                 const data = JSON.parse(jsonStr);
                                 log(`解析数据: ${JSON.stringify(data, null, 2)}`);
-                                
+
                                 updateStatus(data.status, data);
-                                
+
                                 if (data.status === 'generating' && data.retrieved_docs) {
                                     displayRetrievedDocs(data.retrieved_docs);
                                     log(`召回文档数量: ${data.retrieved_docs.length}`);
                                 }
-                                
+
                                 if (data.status === 'loading' && (data.content || data.response)) {
                                     const deltaContent = data.content || data.response;
                                     streamContent += deltaContent;
                                     updateStreamContent(streamContent);
                                 }
-                                
+
                                 if (data.status === 'finished') {
                                     log('流式请求完成');
                                 }
-                                
+
                             } catch (error) {
                                 log(`JSON解析错误: ${error.message}`);
                             }
                         }
                     }
                 }
-                
+
                 log('流式读取完成');
-                
+
             } catch (error) {
                 log(`请求失败: ${error.message}`);
                 updateStatus('error', { message: error.message });
@@ -251,4 +276,5 @@
         }
     </script>
 </body>
+
 </html>

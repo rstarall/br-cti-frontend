@@ -15,6 +15,7 @@ export type Message = {
   loading?: boolean;
   reasoning_content?: string;
   refs?: any[];
+  retrieved_docs?: any[];
 };
 
 export type Conversation = {
@@ -35,6 +36,7 @@ export type ChatMeta = {
   system_prompt?: string;
   model_provider?: string;
   model_name?: string;
+  use_web?: boolean;
 };
 
 export type ChatState = {
@@ -62,11 +64,12 @@ export type ChatState = {
   streamRequest: (conversationId: string, input: string) => Promise<void>;
   initializeApp: () => void;
 };
+const apiUrl = '/api';
 
 const useStore = create<ChatState>()(
   persist(
     (set, get) => ({
-      apiUrl: 'http://localhost:8000/chat/',
+      apiUrl: `${apiUrl}/chat/stream`,
       conversationHistory: {},
       conversationMessageHistory: {},
       currentConversationId: '',
@@ -77,7 +80,8 @@ const useStore = create<ChatState>()(
         system_prompt: '',
         model_provider: '',
         model_name: '',
-        show_retrieval_info:true
+        show_retrieval_info: true,
+        use_web: false
       },
       currentModel: '',
       availableModels: {},
@@ -85,7 +89,11 @@ const useStore = create<ChatState>()(
       isInitialized: false,
       titleGenerating: false,
 
-      setApiUrl: (url) => set({ apiUrl: url }),
+      setApiUrl: (url) => {
+        // 开发环境兜底：避免被旧本地存储覆盖成 http://localhost:8000
+        const sanitized = url && url.startsWith('/api') ? url : '/api/chat/stream';
+        set({ apiUrl: sanitized });
+      },
       setCurrentConversationId: (id: string) => set({ currentConversationId: id }),
       setMeta: (newMeta: Partial<ChatMeta>) =>
         set({ meta: { ...get().meta, ...newMeta } }),
@@ -93,9 +101,9 @@ const useStore = create<ChatState>()(
 
       fetchModels: async (provider: string) => {
         try {
-          const response = await fetch(`http://localhost:8000/chat/models?model_provider=${provider}`, {
+          const response = await fetch(`${apiUrl}/chat/models?model_provider=${provider}`, {
             method: 'GET',
-            credentials: 'include'
+
           });
 
           if (!response.ok) {
@@ -217,7 +225,7 @@ const useStore = create<ChatState>()(
         }),
 
       streamRequest: async (conversationId: string, input: string) => {
-        const { apiUrl, appendMessage, updateMessage, meta, conversationMessageHistory } = get();
+        const { apiUrl, appendMessage, updateMessage, meta, conversationMessageHistory, setApiUrl } = get();
         const conversation = get().conversationHistory[conversationId];
 
         const userMsg: Message = {
@@ -260,6 +268,9 @@ const useStore = create<ChatState>()(
           if (meta.history_round && meta.history_round !== 5) {
             cleanMeta.history_round = meta.history_round;
           }
+          if (meta.use_web) {
+            cleanMeta.use_web = true;
+          }
 
           const requestBody: any = {
             query: input,
@@ -286,13 +297,19 @@ const useStore = create<ChatState>()(
             }
           }
 
-          console.log('发送聊天请求:', requestBody);
-          console.log('请求URL:', apiUrl);
+          // 兜底：如果持久化的 apiUrl 不是以 /api 开头，强制改为通过代理
+          const endpoint = apiUrl && apiUrl.startsWith('/api') ? apiUrl : '/api/chat/stream';
+          if (endpoint !== apiUrl) {
+            setApiUrl(endpoint);
+          }
 
-          const response = await fetch(apiUrl, {
+          console.log('发送聊天请求:', requestBody);
+          console.log('请求URL:', endpoint);
+
+          const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+
             body: JSON.stringify(requestBody)
           });
 
@@ -419,6 +436,12 @@ const useStore = create<ChatState>()(
       initializeApp: () => {
         // 应用初始化逻辑
         console.log('初始化聊天应用...');
+        // 确保 apiUrl 指向代理地址
+        const desired = '/api/chat/stream';
+        const current = get().apiUrl;
+        if (!current || !current.startsWith('/api')) {
+          set({ apiUrl: desired });
+        }
         set({ isInitialized: true });
       }
     }),
@@ -443,7 +466,13 @@ const useStore = create<ChatState>()(
         }> | null => {
           try {
             const str = localStorage.getItem(name);
-            return str ? JSON.parse(str) : null;
+            if (!str) return null;
+            const parsed = JSON.parse(str) as StorageValue<{ apiUrl: string } & any>;
+            // 兜底：如果历史里存的是绝对地址（如 http://localhost:8000），强制改为走代理
+            if (parsed && (parsed as any).state && (parsed as any).state.apiUrl && !(parsed as any).state.apiUrl.startsWith('/api')) {
+              (parsed as any).state.apiUrl = '/api/chat/stream';
+            }
+            return parsed as any;
           } catch (err) {
             console.warn('存储访问失败:', err);
             return null;

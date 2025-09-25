@@ -12,7 +12,7 @@ jest.mock('axios', () => ({
       }
     },
     defaults: {
-      baseURL: 'http://localhost:8000'
+      baseURL: 'http://172.22.232.42:8006'
     },
     get: jest.fn(),
     post: jest.fn(),
@@ -29,7 +29,7 @@ jest.mock('axios', () => ({
         }
       },
       defaults: {
-        baseURL: 'http://localhost:8000'
+        baseURL: 'http://http://172.22.232.42:8006'
       },
       get: jest.fn(),
       post: jest.fn(),

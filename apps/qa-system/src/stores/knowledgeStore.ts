@@ -56,7 +56,7 @@ type KnowledgeState = {
     clearPendingFiles: (databaseId: string) => void;
 };
 
-// const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = '/api';
 
 export const useKnowledgeStore = create<KnowledgeState>()(
     persist(
@@ -70,9 +70,9 @@ export const useKnowledgeStore = create<KnowledgeState>()(
                 try {
                     console.log('开始获取知识库列表');
 
-                    const response = await fetch(`http://localhost:8000/data/`, {
+                    const response = await fetch(`${API_BASE_URL}/data/`, {
                         method: 'GET',
-                        credentials: 'include'
+
                     });
 
                     console.log('获取知识库列表响应状态:', response.status, response.statusText);
@@ -98,12 +98,12 @@ export const useKnowledgeStore = create<KnowledgeState>()(
 
             createDatabase: async (name, description) => {
                 try {
-                    const response = await fetch(`http://localhost:8000/data/`, {
+                    const response = await fetch(`${API_BASE_URL}/data/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        credentials: 'include',
+
                         body: JSON.stringify({
                             database_name: name,
                             description: description
@@ -130,9 +130,9 @@ export const useKnowledgeStore = create<KnowledgeState>()(
                     }
 
                     // 使用查询参数传递db_id进行删除
-                    const response = await fetch(`http://localhost:8000/data/?db_id=${database.db_id}`, {
+                    const response = await fetch(`${API_BASE_URL}/data/?db_id=${database.db_id}`, {
                         method: 'DELETE',
-                        credentials: 'include'
+
                     });
 
                     if (!response.ok) {
@@ -167,12 +167,12 @@ export const useKnowledgeStore = create<KnowledgeState>()(
                     console.log('开始获取知识库文件列表:', { databaseId });
 
                     // 使用新的专门的文件列表API
-                    const url = `http://localhost:8000/data/files?db_id=${databaseId}`;
+                    const url = `${API_BASE_URL}/data/files?db_id=${databaseId}`;
                     console.log('请求URL:', url);
 
                     const response = await fetch(url, {
                         method: 'GET',
-                        credentials: 'include'
+
                     });
 
                     console.log('响应状态:', response.status, response.statusText);
@@ -262,9 +262,9 @@ export const useKnowledgeStore = create<KnowledgeState>()(
                     formData.append('file', file);
 
                     // 现在databaseId实际上就是db_id，直接使用
-                    const uploadResponse = await fetch(`http://localhost:8000/data/upload?db_id=${databaseId}`, {
+                    const uploadResponse = await fetch(`${API_BASE_URL}/data/upload?db_id=${databaseId}`, {
                         method: 'POST',
-                        credentials: 'include',
+
                         body: formData
                     });
 
@@ -300,12 +300,12 @@ export const useKnowledgeStore = create<KnowledgeState>()(
 
                     // 步骤2: 调用 /data/file-to-chunk 进行文件分块
                     // console.log('步骤2: 调用 file-to-chunk 进行分块处理');
-                    const chunkResponse = await fetch(`http://localhost:8000/data/file-to-chunk`, {
+                    const chunkResponse = await fetch(`${API_BASE_URL}/data/file-to-chunk`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        credentials: 'include',
+
                         body: JSON.stringify({
                             files: filePaths,
                             params: {
@@ -326,12 +326,12 @@ export const useKnowledgeStore = create<KnowledgeState>()(
 
                     // 步骤3: 调用 /data/add-by-chunks 将分块添加到数据库
                     //console.log('步骤3: 调用 add-by-chunks 添加到数据库');
-                    const addResponse = await fetch(`http://localhost:8000/data/add-by-chunks`, {
+                    const addResponse = await fetch(`${API_BASE_URL}/data/add-by-chunks`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        credentials: 'include',
+
                         body: JSON.stringify({
                             db_id: databaseId,
                             file_chunks: chunkResult
@@ -382,12 +382,12 @@ export const useKnowledgeStore = create<KnowledgeState>()(
                     console.log('删除文件:', { databaseId, fileId });
 
                     // 使用新的专门的文件删除API
-                    const response = await fetch(`http://localhost:8000/data/file`, {
+                    const response = await fetch(`${API_BASE_URL}/data/file`, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        credentials: 'include',
+
                         body: JSON.stringify({
                             db_id: databaseId,
                             file_id: fileId
@@ -425,12 +425,12 @@ export const useKnowledgeStore = create<KnowledgeState>()(
             queryTest: async (databaseId, query) => {
                 try {
                     // 现在databaseId实际上就是db_id，直接使用
-                    const response = await fetch(`http://localhost:8000/data/query-test`, {
+                    const response = await fetch(`${API_BASE_URL}/data/query-test`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        credentials: 'include',
+
                         body: JSON.stringify({
                             query,
                             meta: { db_id: databaseId }

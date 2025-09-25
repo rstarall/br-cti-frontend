@@ -22,7 +22,10 @@ export default function KGPage() {
         searchNode,
         checkDatabaseStatus,
         addEntitiesByFile,
-        indexNodes
+        getExtractEntitiesTaskStatus,
+        getExtractEntitiesTaskResult,
+        indexNodes,
+        deleteAll
     } = useKGStore();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -131,9 +134,9 @@ export default function KGPage() {
         action: undefined,
         beforeUpload: (file: any) => {
             // 仅校验与拦截自动上传
-            const isLt10M = file.size / 1024 / 1024 < 10;
+            const isLt10M = file.size / 1024 / 1024 < 20;
             if (!isLt10M) {
-                message.error('文件必须小于10MB!');
+                message.error('文件必须小于20MB!');
                 return Upload.LIST_IGNORE;
             }
             setFileList([file]);
@@ -156,23 +159,46 @@ export default function KGPage() {
         setProcessing(true);
 
         try {
-            message.loading('正在添加实体到图数据库...');
+            message.loading('正在创建任务...');
 
             const result = await addEntitiesByFile(rawFile, {
-                // 不显式指定 language，交由前端自动检测
                 kgdbName: 'neo4j'
             });
 
-            if (result.success) {
-                message.success(result.message || '添加成功');
+            if (result.success && result.task_id) {
+                message.success('任务已创建，开始后台处理');
                 setIsUploadModalVisible(false);
                 setFileList([]);
 
-                // 刷新图谱信息
-                fetchGraphInfo();
-                fetchGraphNodes(nodeCount);
+                // 轮询任务状态
+                const taskId = result.task_id;
+                const start = Date.now();
+                const poll = async () => {
+                    const statusRes = await getExtractEntitiesTaskStatus(taskId);
+                    if (statusRes.status === 'success' || statusRes.status === 'failed') {
+                        const finalRes = await getExtractEntitiesTaskResult(taskId);
+                        if (finalRes.status === 'success') {
+                            message.success('实体提取完成');
+                            // 刷新图谱信息
+                            fetchGraphInfo();
+                            fetchGraphNodes(nodeCount);
+                        } else {
+                            message.error(finalRes.message || '任务失败');
+                        }
+                    } else if (statusRes.status === 'pending' || statusRes.status === 'processing') {
+                        // 继续轮询，最多5分钟
+                        if (Date.now() - start < 5 * 60 * 1000) {
+                            setTimeout(poll, 2000);
+                        } else {
+                            message.warning('任务耗时过长，请稍后在后台查看结果');
+                        }
+                    } else if (statusRes.status === 'error') {
+                        message.error(statusRes.message || '任务状态查询失败');
+                    }
+                };
+                setTimeout(poll, 1500);
             } else {
-                message.error(result.message || '添加实体失败');
+                message.error(result.message || '创建任务失败');
             }
         } catch (error: any) {
             console.error('上传失败:', error);
@@ -279,6 +305,30 @@ export default function KGPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        danger
+                        onClick={async () => {
+                            Modal.confirm({
+                                title: '确认清空图数据库？',
+                                content: '此操作不可恢复，将删除所有节点与关系。',
+                                okText: '清空',
+                                okButtonProps: { danger: true },
+                                cancelText: '取消',
+                                onOk: async () => {
+                                    const res = await deleteAll();
+                                    if (res.success) {
+                                        message.success(res.message);
+                                        fetchGraphInfo();
+                                        fetchGraphNodes(nodeCount);
+                                    } else {
+                                        message.error(res.message);
+                                    }
+                                }
+                            });
+                        }}
+                    >
+                        清空
+                    </Button>
                     <InputNumber
                         min={10}
                         max={1000}
@@ -333,7 +383,7 @@ export default function KGPage() {
                     setIsUploadModalVisible(false);
                     setFileList([]);
                 }}
-                okText="添加到图数据库"
+                okText="创建任务"
                 cancelText="取消"
                 okButtonProps={{ disabled: fileList.length === 0 }}
                 confirmLoading={processing}

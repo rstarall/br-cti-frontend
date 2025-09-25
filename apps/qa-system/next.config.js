@@ -6,6 +6,14 @@ const nextConfig = {
   webpack: (config) => {
     return config;
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://172.22.232.42:8006/:path*'
+      }
+    ];
+  },
   devIndicators: {
     buildActivity: true,
     buildActivityPosition: 'bottom-right',

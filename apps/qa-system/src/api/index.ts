@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 
 
 // 创建axios实例
 const api: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: '/api',
   timeout: 30000,
   withCredentials: true,
   headers: {
@@ -86,7 +86,7 @@ export const createStreamRequest = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include',
+
       body: JSON.stringify(data)
     });
 
