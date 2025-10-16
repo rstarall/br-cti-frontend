@@ -357,7 +357,11 @@ export default function KGPage() {
                         <Spin size="large" tip="加载中..." />
                     </div>
                 )}
-                {(!graphData || graphData.nodes.length === 0) && !isLoading ? (
+                {(
+                    !graphData ||
+                    !Array.isArray(graphData?.nodes) ||
+                    graphData?.nodes?.length === 0
+                ) && !isLoading ? (
                     <div className="h-full flex items-center justify-center">
                         <div className="text-center p-8">
                             <p className="text-gray-500 mb-4">暂无图谱数据</p>
@@ -368,7 +372,11 @@ export default function KGPage() {
                     </div>
                 ) : (
                     <KnowledgeGraph
-                        data={graphData}
+                        data={
+                            graphData && Array.isArray(graphData?.nodes) && Array.isArray(graphData?.edges)
+                                ? graphData
+                                : { nodes: [], edges: [] }
+                        }
                         loading={isLoading}
                     />
                 )}

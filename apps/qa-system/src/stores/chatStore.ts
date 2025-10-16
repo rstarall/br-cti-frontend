@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 import { persist, type StorageValue } from 'zustand/middleware';
+import { useAuthStore } from '@/stores/authStore';
+import ChatAPI from '@/api/chat';
+import type { ChatSessionListItem, ChatMessageItem } from '@/api/types';
 
 export type RetrievalContext = {
   id: string;
@@ -18,17 +21,6 @@ export type Message = {
   retrieved_docs?: any[];
 };
 
-export type Conversation = {
-  id: string;
-  title: string;
-  time: string;
-  history: any[];
-};
-
-export type ConversationMessages = {
-  messages: Message[];
-};
-
 export type ChatMeta = {
   use_graph?: boolean;
   db_id?: string;
@@ -37,42 +29,67 @@ export type ChatMeta = {
   model_provider?: string;
   model_name?: string;
   use_web?: boolean;
+  show_retrieval_info?: boolean;
 };
 
 export type ChatState = {
-  apiUrl: string;
-  currentConversationId: string;
-  conversationHistory: Record<string, Conversation>;
-  conversationMessageHistory: Record<string, ConversationMessages>;
+  // 会话列表（从服务器获取，不持久化）
+  sessions: ChatSessionListItem[];
+  // 当前会话ID（thread_id）
+  currentSessionId: string;
+  // 当前会话的消息（仅内存缓存，用于流式更新）
+  currentSessionMessages: Message[];
+  // 会话配置
   meta: ChatMeta;
+  // 模型相关
   currentModel: string;
   availableModels: Record<string, string[]>;
   modelProviders: string[];
+  // 系统状态
   isInitialized: boolean;
-  titleGenerating: boolean;
-  setApiUrl: (url: string) => void;
-  setCurrentConversationId: (id: string) => void;
+  sessionsLoading: boolean;
+  messagesLoading: boolean;
+  
+  // === Actions ===
+  // 会话管理
+  fetchSessions: (userId: number) => Promise<void>;
+  createSession: (userId: number, title?: string, systemPrompt?: string) => Promise<string>;
+  deleteSession: (threadId: string, userId: number, hardDelete?: boolean) => Promise<void>;
+  updateSessionTitle: (threadId: string, userId: number, title: string) => Promise<void>;
+  setCurrentSessionId: (threadId: string) => void;
+  
+  // 消息管理
+  deleteMessage: (threadId: string, messageId: number, userId: number) => Promise<void>;
+  appendMessage: (msg: Message) => void;
+  updateMessage: (id: string, update: string | ((msg: Message) => Message)) => void;
+  clearCurrentMessages: () => void;
+  
+  // 聊天
+  streamRequest: (threadId: string, input: string, userId: number) => Promise<void>;
+  
+  // 模型
   setMeta: (meta: Partial<ChatMeta>) => void;
   setCurrentModel: (model: string) => void;
   fetchModels: (provider: string) => Promise<void>;
-  createConversation: (title: string) => string;
-  resetConversationId: (oldId: string, newId: string) => void;
-  resetConversationTitle: (conversationId: string, title: string) => void;
-  deleteConversation: (conversationId: string) => boolean;
-  appendMessage: (conversationId: string, msg: Message) => void;
-  updateMessage: (conversationId: string, id: string, update: string | ((msg: Message) => Message)) => void;
-  streamRequest: (conversationId: string, input: string) => Promise<void>;
+  
+  // 系统
   initializeApp: () => void;
 };
 const apiUrl = '/api';
 
+// 辅助函数：从第一条用户消息提取标题（取前20个字符）
+const extractTitleFromMessage = (content: string): string => {
+  const title = content.trim().slice(0, 20);
+  return title.length < content.trim().length ? `${title}...` : title;
+};
+
 const useStore = create<ChatState>()(
   persist(
     (set, get) => ({
-      apiUrl: `${apiUrl}/chat/stream`,
-      conversationHistory: {},
-      conversationMessageHistory: {},
-      currentConversationId: '',
+      // === 初始状态 ===
+      sessions: [],
+      currentSessionId: '',
+      currentSessionMessages: [],
       meta: {
         use_graph: false,
         db_id: '',
@@ -85,25 +102,146 @@ const useStore = create<ChatState>()(
       },
       currentModel: '',
       availableModels: {},
-      modelProviders: ['deepseek'],
+      modelProviders: ['deepseek', 'openai', 'ollama'],
       isInitialized: false,
-      titleGenerating: false,
+      sessionsLoading: false,
+      messagesLoading: false,
 
-      setApiUrl: (url) => {
-        // 开发环境兜底：避免被旧本地存储覆盖成 http://localhost:8000
-        const sanitized = url && url.startsWith('/api') ? url : '/api/chat/stream';
-        set({ apiUrl: sanitized });
+      // === 会话管理 ===
+      fetchSessions: async (userId: number) => {
+        try {
+          set({ sessionsLoading: true });
+          const sessions = await ChatAPI.getSessions(userId);
+          
+          // 为每个会话生成标题（如果没有）
+          const sessionsWithTitles = sessions.map(session => ({
+            ...session,
+            title: session.title || `会话 ${new Date(session.created_at).toLocaleDateString()}`
+          }));
+          
+          set({ sessions: sessionsWithTitles });
+        } catch (error) {
+          console.error('获取会话列表失败:', error);
+          throw error;
+        } finally {
+          set({ sessionsLoading: false });
+        }
       },
-      setCurrentConversationId: (id: string) => set({ currentConversationId: id }),
-      setMeta: (newMeta: Partial<ChatMeta>) =>
-        set({ meta: { ...get().meta, ...newMeta } }),
-      setCurrentModel: (model: string) => set({ currentModel: model }),
+
+      createSession: async (userId: number, title?: string, systemPrompt?: string) => {
+        try {
+          const response = await ChatAPI.createSession(userId, title, systemPrompt);
+          
+          // 创建成功后重新加载会话列表
+          await get().fetchSessions(userId);
+          
+          // 设置为当前会话
+          set({
+            currentSessionId: response.session_id,
+            currentSessionMessages: []
+          });
+          
+          return response.session_id;
+        } catch (error) {
+          console.error('创建会话失败:', error);
+          throw error;
+        }
+      },
+
+      deleteSession: async (threadId: string, userId: number, hardDelete = false) => {
+        try {
+          await ChatAPI.deleteSession(threadId, userId, hardDelete);
+          
+          set((state) => ({
+            sessions: state.sessions.filter(s => s.session_id !== threadId),
+            currentSessionId: state.currentSessionId === threadId ? '' : state.currentSessionId,
+            currentSessionMessages: state.currentSessionId === threadId ? [] : state.currentSessionMessages
+          }));
+        } catch (error) {
+          console.error('删除会话失败:', error);
+          throw error;
+        }
+      },
+
+      updateSessionTitle: async (threadId: string, userId: number, title: string) => {
+        try {
+          // 验证标题长度（最大 50 字符）
+          const MAX_TITLE_LENGTH = 50;
+          let validatedTitle = title.trim();
+          
+          if (validatedTitle.length > MAX_TITLE_LENGTH) {
+            console.warn(`标题过长（${validatedTitle.length}字符），已截断至 ${MAX_TITLE_LENGTH} 字符`);
+            validatedTitle = validatedTitle.substring(0, MAX_TITLE_LENGTH);
+          }
+          
+          await ChatAPI.updateSession(threadId, userId, { title: validatedTitle });
+          
+          set((state) => ({
+            sessions: state.sessions.map(s =>
+              s.session_id === threadId 
+                ? { ...s, title: validatedTitle } 
+                : s
+            )
+          }));
+        } catch (error) {
+          console.error('更新会话标题失败:', error);
+          throw error;
+        }
+      },
+
+      setCurrentSessionId: (threadId: string) => {
+        set({ currentSessionId: threadId });
+      },
+
+      // === 消息管理 ===
+      deleteMessage: async (threadId: string, messageId: number, userId: number) => {
+        try {
+          await ChatAPI.deleteMessage(threadId, messageId, userId);
+          
+          set({
+            currentSessionMessages: get().currentSessionMessages.filter(
+              msg => msg.id !== messageId.toString()
+            )
+          });
+        } catch (error) {
+          console.error('删除消息失败:', error);
+          throw error;
+        }
+      },
+
+      appendMessage: (msg: Message) => {
+        set({
+          currentSessionMessages: [...get().currentSessionMessages, msg]
+        });
+      },
+
+      updateMessage: (id: string, update: string | ((msg: Message) => Message)) => {
+        set({
+          currentSessionMessages: get().currentSessionMessages.map(msg =>
+            msg.id === id
+              ? (typeof update === 'function' ? update(msg) : { ...msg, content: update })
+              : msg
+          )
+        });
+      },
+
+      clearCurrentMessages: () => {
+        set({ currentSessionMessages: [] });
+      },
+
+      // === 模型管理 ===
+      setMeta: (newMeta: Partial<ChatMeta>) => {
+        set({ meta: { ...get().meta, ...newMeta } });
+      },
+
+      setCurrentModel: (model: string) => {
+        set({ currentModel: model });
+      },
 
       fetchModels: async (provider: string) => {
         try {
           const response = await fetch(`${apiUrl}/chat/models?model_provider=${provider}`, {
             method: 'GET',
-
           });
 
           if (!response.ok) {
@@ -124,109 +262,10 @@ const useStore = create<ChatState>()(
         }
       },
 
-      resetConversationId: (oldId: string, newId: string) => {
-        const { conversationHistory, conversationMessageHistory } = get();
-
-        // 创建新的记录
-        set({
-          conversationHistory: {
-            ...Object.fromEntries(
-              Object.entries(conversationHistory).filter(([id]) => id !== oldId)
-            ),
-            [newId]: {
-              ...conversationHistory[oldId],
-              id: newId
-            }
-          },
-          conversationMessageHistory: {
-            ...Object.fromEntries(
-              Object.entries(conversationMessageHistory).filter(([id]) => id !== oldId)
-            ),
-            [newId]: conversationMessageHistory[oldId]
-          }
-        });
-      },
-
-      createConversation: (title) => {
-        const conversationId = Date.now().toString();
-        const welcomeMsg: Message = {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: '你好！我是安全智能问答助手，有什么可以帮助你的吗？'
-        };
-        set({
-          conversationHistory: {
-            ...get().conversationHistory,
-            [conversationId]: {
-              id: conversationId,
-              title,
-              time: new Date().getTime().toString(),
-              history: []
-            }
-          },
-          conversationMessageHistory: {
-            ...get().conversationMessageHistory,
-            [conversationId]: {
-              messages: [welcomeMsg]
-            }
-          }
-        });
-        set({ currentConversationId: conversationId });
-        return conversationId;
-      },
-
-      resetConversationTitle: (conversationId, title) => {
-        set({
-          conversationHistory: {
-            ...get().conversationHistory,
-            [conversationId]: {
-              ...get().conversationHistory[conversationId],
-              title
-            }
-          }
-        });
-      },
-
-      deleteConversation: (conversationId) => {
-        set({
-          conversationHistory: Object.fromEntries(
-            Object.entries(get().conversationHistory).filter(([id]) => id !== conversationId)
-          ),
-          conversationMessageHistory: Object.fromEntries(
-            Object.entries(get().conversationMessageHistory).filter(([id]) => id !== conversationId)
-          )
-        });
-        return true;
-      },
-
-      appendMessage: (conversationId, msg) =>
-        set({
-          conversationMessageHistory: {
-            ...get().conversationMessageHistory,
-            [conversationId]: {
-              messages: [...get().conversationMessageHistory[conversationId].messages, msg]
-            }
-          }
-        }),
-
-      updateMessage: (conversationId, id, update) =>
-        set({
-          conversationMessageHistory: {
-            ...get().conversationMessageHistory,
-            [conversationId]: {
-              ...get().conversationMessageHistory[conversationId],
-              messages: get().conversationMessageHistory[conversationId].messages.map(msg =>
-                msg.id === id
-                  ? (typeof update === 'function' ? update(msg) : { ...msg, content: update })
-                  : msg
-              )
-            }
-          }
-        }),
-
-      streamRequest: async (conversationId: string, input: string) => {
-        const { apiUrl, appendMessage, updateMessage, meta, conversationMessageHistory, setApiUrl } = get();
-        const conversation = get().conversationHistory[conversationId];
+      // === 聊天流式请求 ===
+      streamRequest: async (threadId: string, input: string, userId: number) => {
+        const { appendMessage, updateMessage, meta, updateSessionTitle } = get();
+        const isFirstMessage = get().currentSessionMessages.length === 0;
 
         const userMsg: Message = {
           id: Date.now().toString(),
@@ -243,78 +282,52 @@ const useStore = create<ChatState>()(
         };
 
         // 添加用户消息和初始机器人消息
-        appendMessage(conversationId, userMsg);
-        appendMessage(conversationId, botMsg);
+        appendMessage(userMsg);
+        appendMessage(botMsg);
 
         try {
-          // 构建meta参数，从空对象开始
+          // 构建meta参数，但不包含user_id
           const cleanMeta: any = {};
 
-          if (meta.use_graph) {
-            cleanMeta.use_graph = true;
-          }
-          if (meta.db_id) {
-            cleanMeta.db_id = meta.db_id;
-          }
-          if (meta.system_prompt) {
-            cleanMeta.system_prompt = meta.system_prompt;
-          }
-          if (meta.model_provider) {
-            cleanMeta.model_provider = meta.model_provider;
-          }
-          if (meta.model_name) {
-            cleanMeta.model_name = meta.model_name;
-          }
-          if (meta.history_round && meta.history_round !== 5) {
-            cleanMeta.history_round = meta.history_round;
-          }
-          if (meta.use_web) {
-            cleanMeta.use_web = true;
-          }
+          if (meta.use_graph) cleanMeta.use_graph = true;
+          if (meta.db_id) cleanMeta.db_id = meta.db_id;
+          if (meta.system_prompt) cleanMeta.system_prompt = meta.system_prompt;
+          if (meta.model_provider) cleanMeta.model_provider = meta.model_provider;
+          if (meta.model_name) cleanMeta.model_name = meta.model_name;
+          if (meta.history_round && meta.history_round !== 5) cleanMeta.history_round = meta.history_round;
+          if (meta.use_web) cleanMeta.use_web = true;
+          if (meta.show_retrieval_info) cleanMeta.show_retrieval_info = true;
 
           const requestBody: any = {
             query: input,
+            user_id: userId, // user_id 移到顶层
             meta: cleanMeta,
-            thread_id: conversationId
+            thread_id: threadId
           };
 
-          // 构建正确格式的history数组
-          if (conversation?.history && conversation.history.length > 0) {
-            requestBody.history = conversation.history;
-          } else {
-            // 如果没有服务器返回的history，使用本地消息历史
-            const localHistory = conversationMessageHistory[conversationId]?.messages || [];
-            const formattedHistory = localHistory
-              .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-              .slice(-10) // 只取最近10条消息
-              .map(msg => ({
-                role: msg.role,
-                content: msg.content
-              }));
+          // 构建历史消息（排除当前正在添加的消息）
+          const localHistory = get().currentSessionMessages
+            .filter((msg: Message) => !msg.streaming && !msg.loading)
+            .slice(-10) // 最近10条
+            .map((msg: Message) => ({
+              role: msg.role,
+              content: msg.content
+            }));
 
-            if (formattedHistory.length > 0) {
-              requestBody.history = formattedHistory;
-            }
+          if (localHistory.length > 0) {
+            requestBody.history = localHistory;
           }
 
-          // 兜底：如果持久化的 apiUrl 不是以 /api 开头，强制改为通过代理
-          const endpoint = apiUrl && apiUrl.startsWith('/api') ? apiUrl : '/api/chat/stream';
-          if (endpoint !== apiUrl) {
-            setApiUrl(endpoint);
-          }
-
+          const endpoint = '/api/chat/stream';
           console.log('发送聊天请求:', requestBody);
-          console.log('请求URL:', endpoint);
 
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-
             body: JSON.stringify(requestBody)
           });
 
-          console.log('响应状态:', response.status, response.statusText);
-          console.log('响应URL:', response.url);
+          console.log('响应状态:', response.status);
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -342,19 +355,24 @@ const useStore = create<ChatState>()(
                 console.log('接收到数据:', data);
 
                 // 保存服务器返回的模型名称
-                if (data.meta && data.meta.server_model_name) {
+                if (data.meta?.server_model_name) {
                   set({ currentModel: data.meta.server_model_name });
                 }
 
+                // 监听标题生成事件
+                if (data.status === 'title_generated' && data.title) {
+                  updateSessionTitle(threadId, userId, data.title);
+                }
+
                 if (data.status === 'searching') {
-                  updateMessage(conversationId, botMsg.id, (msg) => ({
+                  updateMessage(botMsg.id, (msg) => ({
                     ...msg,
                     content: '🔍 正在搜索知识库...',
                     loading: true,
                     streaming: true
                   }));
                 } else if (data.status === 'generating') {
-                  updateMessage(conversationId, botMsg.id, (msg) => ({
+                  updateMessage(botMsg.id, (msg) => ({
                     ...msg,
                     content: '💭 正在生成回答...',
                     loading: true,
@@ -362,7 +380,7 @@ const useStore = create<ChatState>()(
                   }));
                 } else if (data.status === 'reasoning') {
                   if (data.reasoning_content) {
-                    updateMessage(conversationId, botMsg.id, (msg) => ({
+                    updateMessage(botMsg.id, (msg) => ({
                       ...msg,
                       reasoning_content: data.reasoning_content,
                       content: '🤔 正在推理...',
@@ -371,9 +389,9 @@ const useStore = create<ChatState>()(
                     }));
                   }
                 } else if (data.status === 'loading') {
-                  if (data.response) {
-                    finalContent += data.response;
-                    updateMessage(conversationId, botMsg.id, (msg) => ({
+                  if (data.response || data.content) {
+                    finalContent += (data.response || data.content);
+                    updateMessage(botMsg.id, (msg) => ({
                       ...msg,
                       content: finalContent,
                       loading: false,
@@ -381,34 +399,29 @@ const useStore = create<ChatState>()(
                     }));
                   }
                 } else if (data.status === 'finished') {
-                  // 保存对话历史
-                  if (data.history) {
-                    set({
-                      conversationHistory: {
-                        ...get().conversationHistory,
-                        [conversationId]: {
-                          ...conversation,
-                          history: data.history
-                        }
-                      }
-                    });
-                  }
-
                   // 保存引用
                   if (data.refs) {
                     finalRefs = data.refs;
                   }
 
-                  updateMessage(conversationId, botMsg.id, (msg) => ({
+                  updateMessage(botMsg.id, (msg) => ({
                     ...msg,
                     content: finalContent || msg.content,
                     refs: finalRefs,
+                    retrieved_docs: data.retrieved_docs || [],
                     streaming: false,
                     loading: false
                   }));
+
+                  // 如果是第一条消息，从用户输入提取标题
+                  if (isFirstMessage) {
+                    const title = extractTitleFromMessage(input);
+                    updateSessionTitle(threadId, userId, title);
+                  }
+
                   break;
                 } else if (data.status === 'error') {
-                  updateMessage(conversationId, botMsg.id, (msg) => ({
+                  updateMessage(botMsg.id, (msg) => ({
                     ...msg,
                     content: `❌ 错误: ${data.message || '未知错误'}`,
                     streaming: false,
@@ -424,7 +437,7 @@ const useStore = create<ChatState>()(
 
         } catch (error) {
           console.error('聊天请求失败:', error);
-          updateMessage(conversationId, botMsg.id, (msg) => ({
+          updateMessage(botMsg.id, (msg) => ({
             ...msg,
             content: '⚠️ 连接服务器失败，请检查服务器是否正常运行',
             streaming: false,
@@ -434,72 +447,19 @@ const useStore = create<ChatState>()(
       },
 
       initializeApp: () => {
-        // 应用初始化逻辑
         console.log('初始化聊天应用...');
-        // 确保 apiUrl 指向代理地址
-        const desired = '/api/chat/stream';
-        const current = get().apiUrl;
-        if (!current || !current.startsWith('/api')) {
-          set({ apiUrl: desired });
-        }
         set({ isInitialized: true });
       }
     }),
     {
       name: 'chat-storage',
+      // 仅持久化必要的状态
       partialize: (state) => ({
-        apiUrl: state.apiUrl,
+        currentSessionId: state.currentSessionId,
         meta: state.meta,
         currentModel: state.currentModel,
-        availableModels: state.availableModels,
-        conversationHistory: state.conversationHistory,
-        conversationMessageHistory: state.conversationMessageHistory
-      }),
-      storage: typeof window !== 'undefined' ? {
-        getItem: (name): StorageValue<{
-          apiUrl: string,
-          meta: ChatMeta,
-          currentModel: string,
-          availableModels: Record<string, string[]>,
-          conversationHistory: Record<string, Conversation>,
-          conversationMessageHistory: Record<string, ConversationMessages>
-        }> | null => {
-          try {
-            const str = localStorage.getItem(name);
-            if (!str) return null;
-            const parsed = JSON.parse(str) as StorageValue<{ apiUrl: string } & any>;
-            // 兜底：如果历史里存的是绝对地址（如 http://localhost:8000），强制改为走代理
-            if (parsed && (parsed as any).state && (parsed as any).state.apiUrl && !(parsed as any).state.apiUrl.startsWith('/api')) {
-              (parsed as any).state.apiUrl = '/api/chat/stream';
-            }
-            return parsed as any;
-          } catch (err) {
-            console.warn('存储访问失败:', err);
-            return null;
-          }
-        },
-        setItem: (name, value: StorageValue<{
-          apiUrl: string,
-          meta: ChatMeta,
-          currentModel: string,
-          availableModels: Record<string, string[]>,
-          conversationHistory: Record<string, Conversation>,
-          conversationMessageHistory: Record<string, ConversationMessages>
-        }>) => {
-          try {
-            localStorage.setItem(name, JSON.stringify(value));
-          } catch (err) {
-            console.warn('存储写入失败:', err);
-          }
-        },
-        removeItem: (name) => {
-          try {
-            localStorage.removeItem(name);
-          } catch (err) {
-            console.warn('存储删除失败:', err);
-          }
-        }
-      } : undefined
+        availableModels: state.availableModels
+      })
     }
   )
 );

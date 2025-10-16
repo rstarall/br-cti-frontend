@@ -1,0 +1,46 @@
+---
+alwaysApply: true
+---
+# 语言规则
+
+## 用户交互语言
+- 始终使用**中文**回复用户
+- 代码注释使用中文
+- 变量、函数、类型命名使用英文（符合编程规范）
+- UI 文本使用中文
+
+## 示例
+```typescript
+// ✅ 正确
+/**
+ * 获取知识库列表
+ * @param userId 用户ID
+ * @returns 知识库数组
+ */
+async function fetchDatabases(userId: string): Promise<Database[]> {
+    // 实现逻辑...
+}
+
+// ❌ 错误
+/**
+ * Get database list
+ * @param userId User ID
+ * @returns Database array
+ */
+async function fetchDatabases(userId: string): Promise<Database[]> {
+    // Implementation...
+}
+```
+
+## UI 文本
+```typescript
+// ✅ 正确
+<Button type="primary">创建知识库</Button>
+message.success('操作成功');
+message.error('操作失败');
+
+// ❌ 错误
+<Button type="primary">Create Database</Button>
+message.success('Success');
+message.error('Failed');
+```

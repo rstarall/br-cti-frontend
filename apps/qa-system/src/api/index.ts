@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { useAuthStore } from '@/stores/authStore';
 
 // 创建axios实例
 const api: AxiosInstance = axios.create({
@@ -22,10 +23,14 @@ api.interceptors.request.use(
       params: config.params
     });
 
-    // 可以在这里添加认证token等
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // 注入认证 token
+    try {
+      // 注意：直接访问 zustand store 的 getState，避免在服务器端渲染时报错
+      const token = useAuthStore.getState().token;
+      if (token) {
+        (config.headers as any).Authorization = `Bearer ${token}`;
+      }
+    } catch { }
 
     return config;
   },
@@ -60,7 +65,13 @@ api.interceptors.response.use(
     // 统一错误处理
     if (error.response?.status === 401) {
       // 处理未授权错误
-      console.warn('未授权访问，可能需要重新登录');
+      try {
+        useAuthStore.getState().clear();
+      } catch { }
+      if (typeof window !== 'undefined') {
+        console.warn('未授权访问，跳转登录');
+        window.location.href = '/auth/login';
+      }
     } else if (error.response?.status === 500) {
       // 处理服务器错误
       console.error('服务器内部错误');

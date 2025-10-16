@@ -45,7 +45,7 @@ export function useChat(): [ChatHookState, ChatHookActions] {
 
   // 获取所有会话
   const getConversations = useCallback(() => {
-    return Object.values(conversationHistory).sort((a, b) => 
+    return Object.values(conversationHistory).sort((a, b) =>
       parseInt(b.time) - parseInt(a.time)
     );
   }, [conversationHistory]);
@@ -53,17 +53,17 @@ export function useChat(): [ChatHookState, ChatHookActions] {
   // 发送消息
   const sendMessage = useCallback(async (content: string, useCtiLibrary = false) => {
     if (!content.trim()) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // 如果没有当前会话，创建一个新会话
       let conversationId = currentConversationId;
       if (!conversationId) {
         conversationId = createConversation();
       }
-      
+
       // 使用 store 的 streamRequest 发送消息
       await streamRequest(conversationId, content, useCtiLibrary);
     } catch (err: any) {

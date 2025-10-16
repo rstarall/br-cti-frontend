@@ -55,7 +55,7 @@ export default function KnowledgeBasePage() {
 
     try {
       setDeleteLoading(true);
-      await deleteDatabase(databaseToDelete.id);
+      await deleteDatabase(databaseToDelete.db_id);
       message.success(`知识库"${databaseToDelete.name}"已删除`);
       setDatabaseToDelete(null);
       setIsDeleteModalVisible(false);

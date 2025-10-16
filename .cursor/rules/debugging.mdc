@@ -1,0 +1,127 @@
+---
+description: 调试和问题排查指南
+---
+# 调试和问题排查
+
+## 常见问题和解决方案
+
+### 1. Next.js 流式渲染错误
+**错误**: `ERR_INVALID_STATE: Unable to enqueue`
+
+**原因**: 组件渲染期间抛出异常，流式响应已开始但无法继续
+
+**解决方案**:
+- 为所有可能为空的数据添加守卫：`data && Array.isArray(data?.nodes)`
+- 传递 props 时提供安全默认值：`data={data || { nodes: [], edges: [] }}`
+- 为复杂组件添加 ErrorBoundary
+- 避免在渲染期执行副作用（移到 useEffect）
+
+### 2. API 请求超时
+**错误**: `ECONNRESET: socket hang up`
+
+**原因**: 请求处理时间过长，代理或客户端断开连接
+
+**解决方案**:
+1. **推荐**: 改为异步任务模式
+   - 后端立即返回 task_id
+   - 前端轮询状态
+2. **临时**: 增加代理超时配置
+3. **优化**: 分批提交数据或增大 chunk_size
+
+### 3. 422 Unprocessable Entity
+**原因**: FastAPI 请求体验证失败
+
+**排查步骤**:
+1. 检查后端 API 定义（`apps/qa-system/src/api/readme/api/*.py`）
+2. 确认所有必填字段都已传递
+3. 验证字段类型是否匹配
+4. 在前端打印请求体：`console.log('payload:', JSON.stringify(payload))`
+
+### 4. 307 Temporary Redirect
+**原因**: URL 路径不完全匹配后端路由
+
+**解决方案**:
+- 确保路径一致（特别注意尾部斜杠）
+- 前端 `/api/data` vs 后端 `/data/`
+- 307 重定向可能丢失请求体（特别是 POST）
+
+## 调试技巧
+
+### 前端调试
+```typescript
+// 1. 详细的错误日志
+try {
+    const result = await someAction();
+    console.log('操作成功:', result);
+} catch (error) {
+    console.error('完整错误:', error);
+    console.error('错误消息:', error instanceof Error ? error.message : '未知');
+    if (error instanceof Response) {
+        console.error('响应状态:', error.status);
+        const text = await error.text();
+        console.error('响应内容:', text);
+    }
+}
+
+// 2. 监控状态变化
+useEffect(() => {
+    console.log('状态更新:', { data, loading, error });
+}, [data, loading, error]);
+
+// 3. 检查渲染次数
+useEffect(() => {
+    console.log('组件渲染');
+});
+```
+
+### 后端调试
+- 查看 Docker 日志：观察终端中的 `threatrag-api` 输出
+- 关注 FastAPI 的 INFO/DEBUG 日志
+- 检查请求路径、方法、状态码
+
+### 浏览器工具
+- **Network**: 查看请求响应、耗时、状态码
+- **Console**: 查看错误堆栈、日志输出
+- **React DevTools**: 检查组件状态和 props
+- **Redux DevTools**: 查看 Zustand store 状态（需要配置中间件）
+
+## 预防性措施
+
+### 类型安全
+```typescript
+// 为 API 响应定义类型
+interface ApiResponse<T> {
+    status: 'success' | 'failed';
+    message?: string;
+    data?: T;
+}
+
+// 使用类型守卫
+function isValidData(data: unknown): data is MyDataType {
+    return typeof data === 'object' && 
+           data !== null && 
+           'requiredField' in data;
+}
+```
+
+### 空值守卫
+```typescript
+// 多层可选链
+const value = data?.nested?.deeply?.value ?? 'default';
+
+// 数组检查
+if (Array.isArray(items) && items.length > 0) {
+    // 安全操作
+}
+
+// 函数参数默认值
+function process(data: Data | null = null) {
+    if (!data) return;
+    // 处理逻辑
+}
+```
+
+### 错误边界
+为关键组件添加错误边界，防止局部错误影响整个应用。
+
+参考 [apps/qa-system/src/app/kg/page.tsx](mdc:apps/qa-system/src/app/kg/page.tsx) 的错误处理模式。

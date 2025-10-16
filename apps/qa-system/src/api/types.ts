@@ -69,6 +69,65 @@ export interface ChatModelsResponse {
   models: string[];
 }
 
+// 会话列表项（对应后端 sessions 表）
+export interface ChatSessionListItem {
+  id: number;                    // 数据库自增ID
+  session_id: string;            // 会话ID（用于前后端交互）
+  user_id: string;               // 用户ID
+  system_prompt?: string;        // 系统提示词
+  created_at: string;            // 创建时间
+  updated_at: string;            // 更新时间
+  title?: string;                // 前端维护的标题（从第一条消息提取）
+  message_count?: number;        // 消息数量（可选）
+}
+
+// 会话详情（含消息历史）
+export interface ChatSessionDetail {
+  id: number;
+  thread_id: string;
+  user_id: string;
+  system_prompt?: string;
+  created_at: string;
+  updated_at: string;
+  messages: ChatMessageItem[];
+}
+
+// 消息项（对应后端 messages 表）
+export interface ChatMessageItem {
+  id: number;                    // 数据库消息ID
+  session_id: number;            // 关联的会话数据库ID
+  role: 'user' | 'assistant';    // 角色
+  content: string;               // 消息内容
+  timestamp: string;             // 消息时间戳
+  created_at: string;            // 创建时间
+}
+
+// 创建会话请求
+export interface CreateSessionRequest {
+  user_id: number;
+  title?: string;
+  system_prompt?: string;
+}
+
+// 创建会话响应
+export interface CreateSessionResponse {
+  success: boolean;
+  session_id: string;
+  message: string;
+}
+
+// 更新会话请求
+export interface UpdateSessionRequest {
+  title?: string;
+  system_prompt?: string;
+}
+
+// 获取会话列表响应
+export interface GetSessionsResponse {
+  sessions: ChatSessionListItem[];
+  total: number;
+}
+
 export interface ChatSession {
   id: string;
   history: ChatMessage[];

@@ -1,0 +1,149 @@
+---
+globs: *.tsx
+description: React 组件开发模式和最佳实践
+---
+# React 组件开发模式
+
+## 组件结构
+```typescript
+'use client'; // Next.js App Router 客户端组件
+
+import { useState, useEffect } from 'react';
+import { useXxxStore } from '@/stores/xxxStore';
+import { Button, message } from 'antd';
+
+interface ComponentProps {
+    prop1: string;
+    prop2?: number; // 可选属性
+}
+
+export default function Component({ prop1, prop2 = 0 }: ComponentProps) {
+    // 1. Hooks（按顺序）
+    const [localState, setLocalState] = useState<Type>(initialValue);
+    const { storeState, storeAction } = useXxxStore();
+    
+    // 2. 副作用
+    useEffect(() => {
+        // 初始化逻辑
+    }, []);
+    
+    // 3. 事件处理函数
+    const handleClick = async () => {
+        try {
+            await storeAction();
+            message.success('操作成功');
+        } catch (error) {
+            console.error('错误:', error);
+            message.error('操作失败');
+        }
+    };
+    
+    // 4. 渲染
+    return (
+        <div>
+            {/* JSX */}
+        </div>
+    );
+}
+```
+
+## 条件渲染模式
+```typescript
+// 空值守卫
+{data && Array.isArray(data.items) && data.items.length > 0 ? (
+    <List data={data.items} />
+) : (
+    <Empty description="暂无数据" />
+)}
+
+// 加载状态
+{loading ? (
+    <Spin tip="加载中..." />
+) : (
+    <Content />
+)}
+
+// 错误边界（需要时添加）
+<ErrorBoundary fallback={<ErrorUI />}>
+    <RiskyComponent />
+</ErrorBoundary>
+```
+
+## 数据安全传递
+```typescript
+// 为可能为空的数据提供默认值
+<ChildComponent 
+    data={parentData || { nodes: [], edges: [] }}
+    config={config ?? defaultConfig}
+/>
+
+// 条件渲染比条件 props 更安全
+{data ? <ChildComponent data={data} /> : <Empty />}
+```
+
+## 列表渲染
+```typescript
+// 使用唯一 key
+{items.map(item => (
+    <ItemComponent 
+        key={item.id} // 优先使用稳定的 ID
+        data={item}
+    />
+))}
+
+// Ant Design Table
+<Table
+    dataSource={data}
+    columns={columns}
+    rowKey="id" // 或 rowKey={record => record.id}
+    pagination={{
+        current: page,
+        pageSize: pageSize,
+        onChange: (page, size) => {
+            setPage(page);
+            setPageSize(size);
+        }
+    }}
+/>
+```
+
+## 表单处理
+```typescript
+// Ant Design Form
+const [form] = Form.useForm();
+
+const onFinish = async (values: FormValues) => {
+    try {
+        await submitAction(values);
+        message.success('提交成功');
+        form.resetFields();
+    } catch (error) {
+        message.error('提交失败');
+    }
+};
+
+<Form
+    form={form}
+    onFinish={onFinish}
+    initialValues={{ field: defaultValue }}
+>
+    <Form.Item
+        name="field"
+        label="字段"
+        rules={[{ required: true, message: '请输入' }]}
+    >
+        <Input />
+    </Form.Item>
+</Form>
+```
+
+## 性能优化
+- 使用 `useMemo` 缓存计算结果
+- 使用 `useCallback` 缓存回调函数（传递给子组件时）
+- 避免在渲染期执行副作用
+- 大列表使用虚拟滚动（Ant Design Table 内置）
+
+## 参考示例
+- 知识库详情页: [apps/qa-system/src/app/data/[id]/page.tsx](mdc:apps/qa-system/src/app/data/[id]/page.tsx)
+- 知识图谱页: [apps/qa-system/src/app/kg/page.tsx](mdc:apps/qa-system/src/app/kg/page.tsx)
+- 图谱可视化组件: [apps/qa-system/src/components/KnowledgeGraph.tsx](mdc:apps/qa-system/src/components/KnowledgeGraph.tsx)

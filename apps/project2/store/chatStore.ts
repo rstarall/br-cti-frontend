@@ -35,7 +35,7 @@ export type ChatState = {
   setApiUrl: (url: string) => void;
   setCurrentConversationId: (id: string) => void;
   createConversation: (title: string) => string;
-  resetConversationId: (oldId: string,newId: string) => void;
+  resetConversationId: (oldId: string, newId: string) => void;
   resetConversationTitle: (conversationId: string, title: string) => void;
   deleteConversation: (conversationId: string) => boolean;
   appendMessage: (conversationId: string, msg: Message) => void;
@@ -52,7 +52,7 @@ const useStore = create<ChatState>()(
       currentConversationId: '',
       setApiUrl: (url) => set({ apiUrl: url }),
       setCurrentConversationId: (id: string) => set({ currentConversationId: id }),
-      createConversation: (title) =>{
+      createConversation: (title) => {
         const conversationId = Date.now().toString();
         const welcomeMsg = {
           id: Date.now().toString(),
@@ -75,7 +75,7 @@ const useStore = create<ChatState>()(
             }
           }
         });
-        set({currentConversationId: conversationId});
+        set({ currentConversationId: conversationId });
         return conversationId;
       },
       resetConversationTitle: (conversationId, title) => {
@@ -109,7 +109,7 @@ const useStore = create<ChatState>()(
             }
           }
         }),
-      resetConversationId: (oldId: string,newId: string) => {
+      resetConversationId: (oldId: string, newId: string) => {
         const conversationHistory = get().conversationHistory;
         const oldConversation = conversationHistory[oldId];
         const oldConversationMessages = get().conversationMessageHistory[oldId];
@@ -130,7 +130,7 @@ const useStore = create<ChatState>()(
               }
             }
           });
-          set({currentConversationId: newId});
+          set({ currentConversationId: newId });
         }
       },
       updateMessage: (conversationId, id, update) =>
@@ -186,8 +186,8 @@ const useStore = create<ChatState>()(
                 let jsonStr = match[0];
                 // 替换转义的引号和换行符
                 jsonStr = jsonStr.replace(/\\"/g, '"')
-                                 .replace(/\\n/g, '\n')
-                                 .replace(/\\\\/g, '\\');
+                  .replace(/\\n/g, '\n')
+                  .replace(/\\\\/g, '\\');
 
                 try {
                   const jsonData = JSON.parse(jsonStr);
@@ -213,7 +213,7 @@ const useStore = create<ChatState>()(
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            
+
             body: JSON.stringify({
               message: input,
               conversation_id: conversationId,
@@ -266,9 +266,9 @@ const useStore = create<ChatState>()(
                 console.error('解析会话ID失败:', data, e);
               }
 
-              try{
+              try {
 
-                if(data.startsWith('[conversation_title]:')){
+                if (data.startsWith('[conversation_title]:')) {
                   const returnedConversationTitle = data.substring('[conversation_title]:'.length).trim();
                   console.log('服务器返回会话Title:', returnedConversationTitle);
                   // 如果需要，可以在这里更新会话Title
@@ -276,16 +276,16 @@ const useStore = create<ChatState>()(
                   continue;
                 }
 
-              }catch(e){
+              } catch (e) {
                 console.error('解析会话Title失败:', data, e);
               }
-              try{
+              try {
                 //处理retrievalContexts
-                if(data.startsWith('[rag_context]:')){
+                if (data.startsWith('[rag_context]:')) {
                   const returnedRetrievalContexts = data.substring('[rag_context]:'.length).trim();
                   console.log('服务器返回RAG相关信息:', returnedRetrievalContexts);
                   const retrievalContexts = JSON.parse(returnedRetrievalContexts);
-                  if(retrievalContexts.length > 0){
+                  if (retrievalContexts.length > 0) {
                     updateMessage(conversationId, botMsg.id, msg => ({
                       ...msg,
                       retrievalContexts: retrievalContexts
@@ -293,7 +293,7 @@ const useStore = create<ChatState>()(
                   }
                   continue;
                 }
-              }catch(e){
+              } catch (e) {
                 console.error('解析RAG相关信息失败:', data, e);
               }
 
@@ -306,15 +306,15 @@ const useStore = create<ChatState>()(
                   const obj_type = typeof jsonObj;
                   let obj_content = "";
 
-                  if(obj_type === "object"){
-                    if(jsonObj.type=="conversation"&&jsonObj.data != undefined){
+                  if (obj_type === "object") {
+                    if (jsonObj.type == "conversation" && jsonObj.data != undefined) {
                       //只返回流式会话
                       obj_content = jsonObj.data;
-                    }else if(jsonObj.type=="conversation_full"&&jsonObj.data != undefined){
+                    } else if (jsonObj.type == "conversation_full" && jsonObj.data != undefined) {
                       //全部会话数据的处理
                       // 不处理完整会话数据
                     }
-                  }else{
+                  } else {
                     obj_content = JSON.stringify(jsonObj);
                   }
 

@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+# 项目结构规则
+
+## 项目概览
+这是一个基于 pnpm workspace 的 monorepo 项目，包含多个子应用。
+
+## 主要应用
+- `apps/qa-system/`: 问答系统（Next.js + TypeScript）
+- `apps/project2/`: 项目2应用
+- `apps/enter/`: 入口应用
+- `apps/data-view/`: 数据可视化应用（Vue.js）
+
+## QA System 架构
+主要目录结构：
+- `src/app/`: Next.js App Router 页面
+  - `data/[id]/`: 知识库详情页
+  - `kg/`: 知识图谱页面
+- `src/stores/`: Zustand 状态管理
+  - [knowledgeStore.ts](mdc:apps/qa-system/src/stores/knowledgeStore.ts): 知识库状态
+  - [kgStore.ts](mdc:apps/qa-system/src/stores/kgStore.ts): 知识图谱状态
+- `src/components/`: React 组件
+- `src/api/`: API 接口定义
+  - `readme/api/`: Python FastAPI 后端接口文档
+
+## 后端 API
+- 基础地址: `http://172.22.232.42:8006`
+- Next.js 通过 [next.config.js](mdc:apps/qa-system/next.config.js) rewrites 进行代理
+- 前端统一使用 `/api` 前缀访问后端
+
+## 关键技术栈
+- **前端框架**: Next.js 14 (App Router), React 18
+- **状态管理**: Zustand (带 persist 持久化)
+- **UI 组件**: Ant Design 5
+- **可视化**: D3.js (知识图谱)
+- **后端**: FastAPI (Python)
+- **包管理**: pnpm workspace

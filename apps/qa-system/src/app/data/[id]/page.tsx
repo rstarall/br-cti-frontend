@@ -101,7 +101,9 @@ export default function KnowledgeDetailPage() {
         databases,
         databaseFiles,
         pendingFiles,
-        generateChunks
+        generateChunks,
+        // @ts-ignore 新增的移除待处理文件方法
+        removePendingFile
     } = useKnowledgeStore();
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [fileToDelete, setFileToDelete] = useState<KnowledgeFile | null>(null);
@@ -666,7 +668,19 @@ export default function KnowledgeDetailPage() {
                                         bordered
                                         dataSource={currentPendingFiles}
                                         renderItem={filePath => (
-                                            <List.Item>
+                                            <List.Item
+                                                actions={[
+                                                    <Button
+                                                        key="remove"
+                                                        type="link"
+                                                        danger
+                                                        size="small"
+                                                        onClick={() => removePendingFile(databaseId, filePath)}
+                                                    >
+                                                        删除
+                                                    </Button>
+                                                ]}
+                                            >
                                                 <FileTextOutlined style={{ marginRight: 8 }} />
                                                 {getFileName(filePath)}
                                                 <Tag color="orange" className="ml-2">待处理</Tag>

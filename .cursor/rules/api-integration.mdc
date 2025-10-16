@@ -1,0 +1,67 @@
+---
+description: API 集成和后端交互规范
+---
+# API 集成规范
+
+## API 调用约定
+- 统一使用 `const API_BASE_URL = '/api'` 作为基础路径
+- 通过 Next.js rewrites 代理到后端 `http://172.22.232.42:8006`
+- 配置位置: [next.config.js](mdc:apps/qa-system/next.config.js)
+
+
+## 请求规范
+```typescript
+// 标准 POST 请求
+const response = await fetch(`${API_BASE_URL}/data/xxx`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ key: value })
+});
+
+if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`请求失败: ${response.status} - ${errorText}`);
+}
+
+const result = await response.json();
+```
+
+## 文件上传
+```typescript
+const formData = new FormData();
+formData.append('file', file);
+
+const response = await fetch(`${API_BASE_URL}/data/upload?db_id=${dbId}`, {
+    method: 'POST',
+    body: formData // 不设置 Content-Type，让浏览器自动设置
+});
+```
+
+## 长耗时请求处理
+对于可能超时的请求（如向量化、大文件处理）：
+1. **优先方案**：改为异步任务模式
+   - 后端立即返回 task_id
+   - 前端轮询任务状态
+   - 参考知识图谱的文件上传流程
+
+2. **临时方案**：增加超时配置
+   - 在 next.config.js 中调整代理超时
+   - 为 fetch 添加 AbortController
+
+3. **分批处理**：
+   - 将大数据集拆分成小批次
+   - 逐批提交，累积结果
+
+## 错误码处理
+- `200`: 成功
+- `307`: 重定向（确保 URL 路径正确，避免尾部斜杠问题）
+- `422`: 请求体验证失败（检查必填字段和类型）
+- `500`: 服务器错误（查看后端日志）
+- `ECONNRESET`: 连接重置（通常是超时或代理问题）
+
+## 常见问题
+1. **422 错误**：检查请求体是否包含所有必填字段
+2. **307 重定向**：确保 API 路径与后端路由完全匹配（注意尾部斜杠）
+3. **socket hang up**：长耗时请求，考虑异步任务或分批处理

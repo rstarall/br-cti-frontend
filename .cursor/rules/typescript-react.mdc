@@ -1,0 +1,65 @@
+---
+globs: *.ts,*.tsx
+description: TypeScript 和 React 编码规范
+---
+# TypeScript & React 编码规范
+
+## 通用规则
+- 始终使用 TypeScript 严格模式
+- 优先使用函数组件和 Hooks
+- 使用 `'use client'` 声明客户端组件（Next.js App Router）
+
+## 类型定义
+- 为所有函数参数和返回值显式定义类型
+- 使用 `interface` 定义对象结构，`type` 定义联合/交叉类型
+- 避免使用 `any`，必要时使用 `unknown`
+- Store 类型定义示例参考 [knowledgeStore.ts](mdc:apps/qa-system/src/stores/knowledgeStore.ts)
+
+## React 组件规范
+- 使用箭头函数定义组件：`const ComponentName = () => {}`
+- Props 类型定义使用 `interface ComponentNameProps`
+- 使用解构接收 props：`({ prop1, prop2 }: Props)`
+- 副作用放在 `useEffect` 中，避免在渲染期执行
+
+## 状态管理（Zustand）
+- Store 命名：`useXxxStore`
+- 使用 `persist` 中间件持久化关键状态
+- 异步操作在 store actions 中处理
+- 示例：
+```typescript
+export const useXxxStore = create<XxxState>()(
+    persist(
+        (set, get) => ({
+            // state
+            data: [],
+            // actions
+            fetchData: async () => {
+                const response = await fetch('/api/...');
+                set({ data: await response.json() });
+            }
+        }),
+        { name: 'xxx-storage' }
+    )
+);
+```
+
+## 错误处理
+- 所有 async 函数必须用 try-catch 包裹
+- 使用 `console.error` 记录错误详情
+- 用户可见错误使用 Ant Design 的 `message` 或 `notification` 提示
+- 示例：
+```typescript
+try {
+    await someAsyncOperation();
+    message.success('操作成功');
+} catch (error) {
+    console.error('详细错误:', error);
+    message.error(`操作失败: ${error instanceof Error ? error.message : '未知错误'}`);
+}
+```
+
+## 空值安全
+- 使用可选链：`data?.nodes?.length`
+- 使用空值合并：`value ?? defaultValue`
+- 数组检查：`Array.isArray(data) && data.length > 0`
+- 传递 props 时提供安全默认值

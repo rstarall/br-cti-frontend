@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useAuthStore } from '@/stores/authStore';
 
 export type KnowledgeDatabase = {
     id: string;
@@ -12,6 +13,7 @@ export type KnowledgeDatabase = {
     embed_model: string; // 嵌入模型
     dimension: number; // 维度
     meta_info?: any; // 元信息
+    user_id: string; // 用户ID
     created_at?: string; // 创建时间
 };
 
@@ -53,6 +55,7 @@ type KnowledgeState = {
     deleteFile: (databaseId: string, fileId: string) => Promise<void>;
     queryTest: (databaseId: string, query: string) => Promise<any>;
     addPendingFile: (databaseId: string, filePath: string) => void;
+    removePendingFile: (databaseId: string, filePath: string) => void;
     clearPendingFiles: (databaseId: string) => void;
 };
 
@@ -70,9 +73,10 @@ export const useKnowledgeStore = create<KnowledgeState>()(
                 try {
                     console.log('开始获取知识库列表');
 
-                    const response = await fetch(`${API_BASE_URL}/data/`, {
+                    const userId = useAuthStore.getState().user?.userId;
+                    const url = userId ? `${API_BASE_URL}/data/user-knowledge-bases?user_id=${encodeURIComponent(userId)}` : `${API_BASE_URL}/data/`;
+                    const response = await fetch(url, {
                         method: 'GET',
-
                     });
 
                     console.log('获取知识库列表响应状态:', response.status, response.statusText);
@@ -86,7 +90,8 @@ export const useKnowledgeStore = create<KnowledgeState>()(
                     const data = await response.json();
                     console.log('知识库列表API响应数据:', data);
 
-                    const databases = data.databases || [];
+                    // 新接口直接返回列表；旧接口返回 { databases }
+                    const databases = Array.isArray(data) ? data : (data.databases || []);
                     console.log('解析出的知识库列表:', databases);
 
                     set({ databases });
@@ -98,7 +103,7 @@ export const useKnowledgeStore = create<KnowledgeState>()(
 
             createDatabase: async (name, description) => {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/data/`, {
+                    const response = await fetch(`${API_BASE_URL}/data`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -106,7 +111,8 @@ export const useKnowledgeStore = create<KnowledgeState>()(
 
                         body: JSON.stringify({
                             database_name: name,
-                            description: description
+                            description: description,
+                            user_id: useAuthStore.getState().user?.userId
                         })
                     });
 
@@ -123,31 +129,27 @@ export const useKnowledgeStore = create<KnowledgeState>()(
 
             deleteDatabase: async (databaseId) => {
                 try {
-                    // 找到对应的数据库记录，获取db_id
-                    const database = get().databases.find(db => db.id === databaseId);
-                    if (!database) {
-                        throw new Error('知识库不存在');
+                    const userId = useAuthStore.getState().user?.userId;
+                    if (!userId) {
+                        throw new Error('用户未登录');
                     }
 
-                    // 使用查询参数传递db_id进行删除
-                    const response = await fetch(`${API_BASE_URL}/data/?db_id=${database.db_id}`, {
+                    // 使用新的用户知识库删除接口
+                    const response = await fetch(`${API_BASE_URL}/data/user-knowledge-bases?user_id=${encodeURIComponent(userId)}&db_id=${databaseId}`, {
                         method: 'DELETE',
-
                     });
 
                     if (!response.ok) {
                         throw new Error(`删除知识库失败: ${response.status}`);
                     }
 
-                    set((state) => ({
-                        databases: state.databases.filter(db => db.id !== databaseId),
-                        databaseFiles: Object.fromEntries(
-                            Object.entries(state.databaseFiles).filter(([id]) => id !== databaseId)
-                        ),
-                        pendingFiles: Object.fromEntries(
-                            Object.entries(state.pendingFiles).filter(([id]) => id !== databaseId)
-                        )
-                    }));
+                    const result = await response.json();
+                    if (result.status === 'failed') {
+                        throw new Error(result.message || '删除知识库失败');
+                    }
+
+                    // 重新获取知识库列表
+                    await get().fetchDatabases();
 
                     if (get().currentDatabaseId === databaseId) {
                         set({ currentDatabaseId: '' });
@@ -364,6 +366,15 @@ export const useKnowledgeStore = create<KnowledgeState>()(
                     pendingFiles: {
                         ...state.pendingFiles,
                         [databaseId]: [...(state.pendingFiles[databaseId] || []), filePath]
+                    }
+                }));
+            },
+
+            removePendingFile: (databaseId, filePath) => {
+                set(state => ({
+                    pendingFiles: {
+                        ...state.pendingFiles,
+                        [databaseId]: (state.pendingFiles[databaseId] || []).filter(fp => fp !== filePath)
                     }
                 }));
             },

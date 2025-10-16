@@ -7,9 +7,11 @@ import { Avatar, Typography, message, Select, Tag, Dropdown, Button, Switch } fr
 import { DeleteOutlined, DatabaseOutlined, PartitionOutlined, CaretDownOutlined } from '@ant-design/icons';
 import { useChatStore, Message } from '../stores/chatStore';
 import { useKnowledgeStore } from '../stores/knowledgeStore';
+import { useAuthStore } from '../stores/authStore';
 import MarkdownRenderer from './Markdown';
 import { useAgentStore } from '../stores/agentStore';
 import RetrievedDocs from './RetrievedDocs';
+import ChatAPI from '@/api/chat';
 
 const { Option } = Select;
 
@@ -38,11 +40,11 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
   const containerRef = useRef<any>(null);
 
   const {
-    currentConversationId,
-    setCurrentConversationId,
+    currentSessionId,
+    setCurrentSessionId,
     streamRequest,
-    createConversation,
-    conversationMessageHistory,
+    createSession,
+    currentSessionMessages,
     meta,
     setMeta,
     currentModel,
@@ -51,12 +53,13 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
     fetchModels,
     isInitialized,
     initializeApp,
-    titleGenerating
+    fetchSessions
   } = useChatStore();
 
+  // 获取用户ID
+  const { user } = useAuthStore();
+
   const { databases, fetchDatabases } = useKnowledgeStore();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const prevMessagesRef = useRef<Message[]>([]);
 
   // 当前选中的Agent
   const { agents, selectedAgentId, selectAgent } = useAgentStore();
@@ -73,9 +76,11 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
   useEffect(() => {
     const initializeModels = async () => {
       // 只获取deepseek的模型列表
-      if (!availableModels['deepseek']) {
+      if (!availableModels['deepseek'] && !availableModels['openai'] && !availableModels['ollama']) {
         try {
           await fetchModels('deepseek');
+          await fetchModels('openai');
+          await fetchModels('ollama');
         } catch (error) {
           console.error('获取deepseek模型列表失败:', error);
         }
@@ -103,48 +108,88 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
     }
   }, [isInitialized, initializeApp]);
 
-  // 消息更新逻辑 - 当会话ID或消息历史变化时更新
+  // 消息更新逻辑 - 当会话ID或消息变化时更新
   useEffect(() => {
-    if (currentConversationId && conversationMessageHistory[currentConversationId]) {
-      const currentMessages = conversationMessageHistory[currentConversationId].messages || [];
-      console.log(`更新消息列表，会话ID: ${currentConversationId}, 消息数: ${currentMessages.length}`);
+    if (currentSessionId && Array.isArray(currentSessionMessages) && currentSessionMessages.length > 0) {
+      console.log(`更新消息列表，会话ID: ${currentSessionId}, 消息数: ${currentSessionMessages.length}`);
 
       // 消息变化立即更新
-      setMessages([...currentMessages]);
+      // setMessages([...currentSessionMessages]); // This line is removed
 
       // 有新消息时，滚动到底部
       autoScrollToBottom();
 
       // 保存当前消息以备后续比较
-      prevMessagesRef.current = [...currentMessages];
-    } else if (currentConversationId) {
-      console.log(`会话ID ${currentConversationId} 没有对应的消息记录`);
-      setMessages([]);
+      // prevMessagesRef.current = [...currentSessionMessages]; // This line is removed
+    } else if (currentSessionId) {
+      console.log(`会话ID ${currentSessionId} 没有消息`);
+      // setMessages([]); // This line is removed
     }
-  }, [currentConversationId, conversationMessageHistory, autoScrollToBottom]);
+  }, [currentSessionId, currentSessionMessages, autoScrollToBottom]);
+
+  // 当切换会话时，加载消息历史
+  useEffect(() => {
+    // 只有当存在会话ID和用户ID时才加载
+    if (currentSessionId && user?.userId) {
+      console.log('准备加载会话消息历史:', currentSessionId);
+      
+      // 直接调用API，不再通过store action
+      ChatAPI.getSessionMessages(currentSessionId, Number(user.userId))
+        .then(messages => {
+          const formattedMessages: Message[] = messages.map((msg, index) => ({
+            id: `${msg.timestamp}-${index}`, // 使用 timestamp 和 index 生成唯一ID
+            role: msg.role,
+            content: msg.content
+          }));
+          // 直接更新store状态
+          useChatStore.setState({ currentSessionMessages: formattedMessages });
+        })
+        .catch((error: any) => {
+          console.error('加载消息失败:', error);
+          
+          // 如果是 404 错误，说明会话不存在
+          if (error?.response?.status === 404) {
+            message.warning('会话不存在或已删除');
+            // 同时清空本地状态
+            useChatStore.setState({ currentSessionMessages: [] });
+          } else {
+            message.error('无法加载聊天记录');
+          }
+        });
+    }
+    // 移除 fetchSessionMessages 的依赖，因为它来自 store 是稳定的
+  }, [currentSessionId, user?.userId]);
 
   // 优化提交处理函数
   const handleSubmit = async (content: string) => {
     if (!content.trim()) return;
 
-    let convId = currentConversationId;
-    if (!convId) {
-      // 创建新会话并确保立即设置
-      convId = createConversation('');
-      setCurrentConversationId(convId);
+    if (!user?.userId) {
+      message.error('请先登录');
+      return;
+    }
 
-      // 立即更新消息列表，确保界面显示欢迎消息
-      const welcomeMessages = conversationMessageHistory[convId]?.messages || [];
-      setMessages([...welcomeMessages]);
+    let sessionId = currentSessionId;
+    
+    // 如果没有当前会话，创建新会话
+    if (!sessionId) {
+      try {
+        sessionId = await createSession(Number(user.userId), undefined, meta.system_prompt);
+        setCurrentSessionId(sessionId);
+      } catch (error) {
+        console.error('创建会话失败:', error);
+        message.error('创建会话失败');
+        return;
+      }
     }
 
     setValue('');
     try {
-      console.log("发送请求到会话:", convId);
-      await streamRequest(convId, content);
+      console.log("发送请求到会话:", sessionId);
+      await streamRequest(sessionId, content, Number(user.userId));
     } catch (error) {
       console.error('请求失败:', error);
-      message.error("请求失败！")
+      message.error("请求失败！");
     }
   };
 
@@ -324,7 +369,7 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
           </div>
 
           {/* 功能状态指示 */}
-          {(meta.use_graph || meta.db_id || titleGenerating) && (
+          {(meta.use_graph || meta.db_id) && (
             <div className="mb-4 flex justify-center">
               <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                 {meta.use_graph && (
@@ -340,26 +385,17 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
                     {databases.find(db => db.db_id === meta.db_id)?.name || '知识库'}
                   </span>
                 )}
-                {titleGenerating && (
-                  <>
-                    {(meta.use_graph || meta.db_id) && <span>•</span>}
-                    <span className="flex items-center gap-1">
-                      <span className="animate-spin">⚙️</span>
-                      正在生成标题...
-                    </span>
-                  </>
-                )}
               </div>
             </div>
           )}
 
           <Bubble.List
             className='bg-white pb-[140px] overflow-hidden'
-            items={messages.map((msg) => commonBubble(msg))}
+            items={Array.isArray(currentSessionMessages) ? currentSessionMessages.map((msg) => commonBubble(msg)) : []}
           />
 
           <div style={{ position: 'absolute', top: 0, right: 0, background: '#f0f0f0', padding: '2px 5px', fontSize: '12px' }}>
-            消息数: {messages.length}
+            消息数: {Array.isArray(currentSessionMessages) ? currentSessionMessages.length : 0}
           </div>
         </div>
 
