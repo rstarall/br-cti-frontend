@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.6.1",
+    "@types/crypto-js": "^4.2.2",
+    "chart.js": "4.4.1",
+    "crypto-js": "^4.2.0",
     "qiankun": "^2.10.16",
-    "react-router-dom": "^7.4.1",
-    "chart.js": "4.4.1"
+    "react-router-dom": "^7.4.1"
   }
 }

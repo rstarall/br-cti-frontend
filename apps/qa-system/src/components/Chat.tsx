@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import type { BubbleProps } from '@ant-design/x';
 import { XProvider, Bubble, Sender } from '@ant-design/x';
-import { Avatar, Typography, message, Select, Tag, Dropdown, Button, Switch } from 'antd';
-import { DeleteOutlined, DatabaseOutlined, PartitionOutlined, CaretDownOutlined } from '@ant-design/icons';
+import { Avatar, Typography, message, Select, Tag, Dropdown, Button, Switch, Popover, Tooltip } from 'antd';
+import { DeleteOutlined, DatabaseOutlined, PartitionOutlined, CaretDownOutlined, PlusOutlined, FileSearchOutlined, MenuUnfoldOutlined, CheckOutlined } from '@ant-design/icons';
 import { useChatStore, Message } from '../stores/chatStore';
 import { useKnowledgeStore } from '../stores/knowledgeStore';
 import { useAuthStore } from '../stores/authStore';
@@ -12,6 +12,10 @@ import MarkdownRenderer from './Markdown';
 import { useAgentStore } from '../stores/agentStore';
 import RetrievedDocs from './RetrievedDocs';
 import ChatAPI from '@/api/chat';
+import { useUIStore } from '@/stores/uiStore';
+import { usePathname } from 'next/navigation';
+import { useFixedSiderWidth } from './ClientLayout';
+
 
 const { Option } = Select;
 
@@ -33,11 +37,20 @@ const MemoizedMarkdownRenderer = memo(({ content }: { content: string }) => (
 //   </div>
 // ));
 
-const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
+const Chat: React.FC = () => {
   const [value, setValue] = useState('');
+  const [toolsOpen, setToolsOpen] = useState(false);
   const conversationsRef = useRef<any>(null);
   const senderRef = useRef<any>(null);
   const containerRef = useRef<any>(null);
+  const { isSidebarCollapsed, toggleSidebar } = useUIStore();
+  const { width: fixedSiderWidth } = useFixedSiderWidth();
+  const pathname = usePathname();
+
+  const showSideContainer = pathname.startsWith('/chat');
+  const sessionSiderWidth = showSideContainer && !isSidebarCollapsed ? fixedSiderWidth : 0;
+  const iconSiderWidth = 50;
+  const totalSiderWidth = iconSiderWidth + sessionSiderWidth;
 
   const {
     currentSessionId,
@@ -53,7 +66,9 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
     fetchModels,
     isInitialized,
     initializeApp,
-    fetchSessions
+    fetchSessions,
+    appendMessage,
+    updateMessage,
   } = useChatStore();
 
   // 获取用户ID
@@ -169,8 +184,84 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
       return;
     }
 
+    // 深度思考模式
+    if (meta.use_deep_thought) {
+      if (!meta.db_id) {
+        message.error('深度思考模式需要选择一个知识库');
+        return;
+      }
+
+      let sessionId = currentSessionId;
+      let isNewSession = false;
+      if (!sessionId) {
+        try {
+          sessionId = await createSession(Number(user.userId), undefined, meta.system_prompt);
+          setCurrentSessionId(sessionId);
+          isNewSession = true;
+        } catch (error) {
+          console.error('创建会话失败:', error);
+          message.error('创建会话失败');
+          return;
+        }
+      }
+
+      setValue('');
+
+      // 在添加新消息前，捕获当前的历史记录
+      const history = isNewSession ? [] : [...currentSessionMessages];
+
+      const userMessage: Message = {
+        id: `${Date.now()}-user`,
+        role: 'user',
+        content,
+      };
+      appendMessage(userMessage);
+
+      const assistantMessageId = `${Date.now()}-assistant`;
+      const assistantMessage: Message = {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '正在进行深度思考...',
+        loading: true,
+      };
+      appendMessage(assistantMessage);
+      autoScrollToBottom();
+
+      try {
+        const response = await ChatAPI.hybridRetrieval(content, meta, history, sessionId);
+
+        if (response.status === 'success' && response.generated_answer.content) {
+          const finalContent = `#### 检索总结\n${response.retrieval_summary || '无可用总结'}\n\n---\n\n#### 生成答案\n${response.generated_answer.content}`;
+          updateMessage(assistantMessageId, (msg) => ({
+            ...msg,
+            content: finalContent,
+            loading: false,
+          }));
+        } else {
+          updateMessage(assistantMessageId, (msg) => ({
+            ...msg,
+            content: `深度思考失败: ${response.generated_answer.error || '未知错误'}`,
+            loading: false,
+          }));
+        }
+      } catch (error: any) {
+        console.error('深度思考请求失败:', error);
+        const errorMsg = error.response?.data?.detail || error.message || '未知错误';
+        message.error(`深度思考请求失败: ${errorMsg}`);
+        updateMessage(assistantMessageId, (msg) => ({
+          ...msg,
+          content: `深度思考请求失败: ${errorMsg}`,
+          loading: false,
+        }));
+      } finally {
+        autoScrollToBottom();
+      }
+      return; // 结束深度思考模式的执行
+    }
+
+    // --- 原有的流式请求逻辑 ---
     let sessionId = currentSessionId;
-    
+
     // 如果没有当前会话，创建新会话
     if (!sessionId) {
       try {
@@ -224,38 +315,46 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
     }
   };
 
-
-
-  // 创建模型选择菜单项
-  const getModelMenuItems = () => {
-    const items: any[] = [];
-
-    modelProviders.forEach(provider => {
+  // 创建模型选择菜单项 (新版本)
+  const renderModelMenu = () => (
+    <div className="bg-white rounded-lg shadow-lg w-64 p-2 border border-gray-200">
+      <div className="px-3 py-2 text-sm text-gray-500">选择模型</div>
+      {modelProviders.map(provider => {
       const providerModels = availableModels[provider] || [];
-      if (providerModels.length > 0) {
-        items.push({
-          type: 'group',
-          label: provider === 'deepseek' ? 'DeepSeek' : provider.toUpperCase(),
-          children: providerModels.map(model => ({
-            key: `${provider}-${model}`,
-            label: model,
-            onClick: () => {
-              setMeta({ model_provider: provider, model_name: model });
-            }
-          }))
-        });
-      } else {
-        // 如果没有加载模型，添加提供商选项来触发加载
-        items.push({
-          key: provider,
-          label: `${provider === 'deepseek' ? 'DeepSeek' : provider.toUpperCase()}`,
-          onClick: () => handleProviderChange(provider)
-        });
-      }
-    });
+        if (providerModels.length === 0) return null;
+        
+        // 简单的模型描述
+        const modelDescriptions: Record<string, string> = {
+          'deepseek-chat': '快速提供全方位的帮助',
+          'deepseek-coder': '推理、数学和编码',
+        };
 
-    return items;
-  };
+        return (
+          <div key={provider}>
+            {modelProviders.length > 1 && <div className="px-3 py-2 mt-2 text-xs font-semibold text-gray-400 uppercase">{provider}</div>}
+            {providerModels.map(model => {
+              const isSelected = meta.model_provider === provider && meta.model_name === model;
+              return (
+                <div
+                  key={`${provider}-${model}`}
+                  className="flex items-center justify-between p-3 rounded-md hover:bg-gray-50 cursor-pointer"
+                  onClick={() => {
+                    setMeta({ model_provider: provider, model_name: model });
+                  }}
+                >
+                  <div>
+                    <div className="text-sm font-medium text-gray-800">{model}</div>
+                    <div className="text-xs text-gray-500">{modelDescriptions[model] || '通用模型'}</div>
+                  </div>
+                  {isSelected && <CheckOutlined className="text-blue-500" />}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   // 获取当前显示的模型名称
   const getCurrentModelDisplay = () => {
@@ -299,19 +398,20 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
 
   // 优化 commonBubble，添加 Markdown 到依赖数组
   const commonBubble = useCallback((msg: Message) => {
+    const isUser = msg.role === 'user';
     console.log(`Message ${msg.id} streaming: ${msg.streaming}, loading: ${msg.loading}`); // 添加调试日志
     return {
       key: msg.id,
       content: msg.content,
       messageRender: (content: string) => messageRenderer(content, msg), // 传递消息对象
-      placement: msg.role === 'user' ? 'end' as const : 'start' as const,
-      variant: msg.role === 'user' ? 'filled' as const : 'outlined' as const,
+      placement: isUser ? 'end' as const : 'start' as const,
+      variant: isUser ? 'filled' as const : 'outlined' as const,
       loading: msg.loading,
       typing: msg.role === 'assistant' && msg.streaming === true,
       shape: 'round' as const,
       avatar: msg.role === 'assistant' ? <Avatar>AI</Avatar> : undefined,
       className: 'p-0',
-      contentClassName: 'flex justify-center items-center mb-[-12px]', // 使用 contentClassName 来控制内容区域的样式
+      contentClassName: `${isUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'} rounded-2xl px-4 py-2 shadow-sm max-w-[720px]`,
     } as BubbleProps;
   }, [messageRenderer]);
 
@@ -324,53 +424,112 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
     }
   };
 
+  const handleDeepThoughtSelect = () => {
+    setMeta({ use_deep_thought: true });
+    setToolsOpen(false);
+  };
+
+  const toolsContent = (
+    <div className="w-72">
+      <div className="p-2">
+        <div
+          className="flex items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer"
+          onClick={handleDeepThoughtSelect}
+        >
+          <FileSearchOutlined className="mr-3 text-gray-600" />
+          <span className="text-sm text-gray-800">深度思考</span>
+        </div>
+      </div>
+      <div className="border-t border-gray-200 mx-2 my-1"></div>
+      <div className="p-3 space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-700">开启 Web 搜索</span>
+          <Switch size="small" checked={!!meta.use_web} onChange={handleWebSearchToggle} />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-700">知识图谱</span>
+          <Switch size="small" checked={!!meta.use_graph} onChange={handleGraphToggle} />
+        </div>
+        <div>
+          <span className="text-sm text-gray-700 mb-2 block">选择知识库</span>
+          <Select
+            placeholder="选择知识库"
+            allowClear
+            size="small"
+            style={{ width: '100%' }}
+            value={databases.find(db => db.db_id === meta.db_id)?.id || undefined}
+            onChange={handleDatabaseChange}
+            suffixIcon={<DatabaseOutlined />}
+          >
+            {databases.map(db => (
+              <Option key={db.id} value={db.id}>
+                {db.name}
+              </Option>
+            ))}
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <XProvider>
-      <div ref={containerRef} className='h-[calc(100vh-50px)] bg-white relative overflow-auto' style={{
-        backgroundImage: "url('./Q&A.png')",
-        backgroundSize: '85%',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}>
-        <div
-          ref={conversationsRef}
-          className='bg-white'
-          style={{
-            flex: 1,
-            overflow: 'auto',
-            padding: '20px',
-            minHeight: '300px',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            opacity: 1
-          }}
-        >
-          {/* ChatGPT样式的模型选择器 */}
-          <div className="mb-4 flex justify-center">
+      <div ref={containerRef} className='h-[calc(100vh-50px)] bg-white w-full flex flex-col'>
+        {/* Header bar that spans full width */}
+        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md py-4 border-b border-gray-200 w-full">
+          <div className="w-full px-4 flex justify-between items-center">
             <Dropdown
-              menu={{ items: getModelMenuItems() }}
+              dropdownRender={renderModelMenu}
               trigger={['click']}
-              placement="bottomCenter"
+              placement="bottomLeft"
             >
               <Button
                 type="text"
-                className="flex items-center gap-2 px-6 py-3 text-xl font-semibold hover:bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-all"
-                style={{
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                  background: 'white'
-                }}
+                className="flex items-center gap-2 px-5 py-2.5 text-4xl font-semibold text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full transition-all"
+                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
               >
                 <span>{getCurrentModelDisplay()}</span>
-                <CaretDownOutlined className="text-sm opacity-60" />
               </Button>
             </Dropdown>
+            <div className="text-sm text-gray-500">
+              消息数: {Array.isArray(currentSessionMessages) ? currentSessionMessages.length : 0}
+            </div>
+          </div>
           </div>
 
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto pb-32">
+          {isSidebarCollapsed && (
+            <Tooltip title="展开菜单">
+              <Button
+                type="text"
+                shape="circle"
+                icon={<MenuUnfoldOutlined />}
+                onClick={toggleSidebar}
+                className="absolute top-4 left-4 z-20" 
+              />
+            </Tooltip>
+          )}
+
+          {Array.isArray(currentSessionMessages) && currentSessionMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-center">
+                <h1 className="text-5xl font-bold">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                    你好, {user?.username || '用户'}
+                  </span>
+                </h1>
+                <p className="mt-4 text-2xl text-gray-400">今天有什么可以帮你的吗？</p>
+              </div>
+            </div>
+          ) : (
+            <div
+              ref={conversationsRef}
+              className='bg-white w-full max-w-3xl mx-auto px-4 flex flex-col'
+            >
           {/* 功能状态指示 */}
-          {(meta.use_graph || meta.db_id) && (
-            <div className="mb-4 flex justify-center">
+              {(meta.use_graph || meta.db_id) && (
+                <div className="my-4 flex justify-center">
               <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                 {meta.use_graph && (
                   <span className="flex items-center gap-1">
@@ -390,94 +549,50 @@ const Chat: React.FC<{ siderWidth: number }> = ({ siderWidth = 300 }) => {
           )}
 
           <Bubble.List
-            className='bg-white pb-[140px] overflow-hidden'
-            items={Array.isArray(currentSessionMessages) ? currentSessionMessages.map((msg) => commonBubble(msg)) : []}
+                className='bg-white pb-8'
+                items={Array.isArray(currentSessionMessages) ? currentSessionMessages.map((msg) => commonBubble(msg)) : []}
           />
-
-          <div style={{ position: 'absolute', top: 0, right: 0, background: '#f0f0f0', padding: '2px 5px', fontSize: '12px' }}>
-            消息数: {Array.isArray(currentSessionMessages) ? currentSessionMessages.length : 0}
+            </div>
+          )}
           </div>
         </div>
 
         <div
-          className="fixed bottom-[0] right-0 bg-white"
-          style={{ padding: '10px', borderTop: '1px solid #eee', width: `calc(100% - ${siderWidth}px)` }}
-        >
-          {/* Web 搜索开关（位于输入框上方） */}
-          <div className="mb-2 flex items-center gap-2">
-            <Switch
-              checked={!!meta.use_web}
-              onChange={handleWebSearchToggle}
-            />
-            <span className="text-sm text-gray-700">开启 Web 搜索</span>
-            {meta.use_web && (
-              <Tag color="green">已开启</Tag>
-            )}
-          </div>
-          {/* Agent显示 */}
-          {selectedAgentId && agents.find(a => a.id === selectedAgentId) && (
-            <div className='flex items-center gap-2 mb-2'>
-              <div className='flex items-center gap-2 border border-2 border-blue-400 hover:border-red-300 pr-2 rounded-md cursor-pointer'
-                onMouseEnter={() => setDeleteAgent(true)}
-                onMouseLeave={() => setDeleteAgent(false)}
+        className="fixed bottom-0 bg-transparent"
+        style={{ width: `calc(100% - ${totalSiderWidth}px)`, left: `${totalSiderWidth}px` }}
+      >
+        <div className="mx-auto max-w-3xl p-4">
+          <div className="relative flex items-center w-full p-1 bg-white border border-gray-200 rounded-full shadow-sm">
+            <Popover content={toolsContent} trigger="click" placement="topLeft" open={toolsOpen} onOpenChange={setToolsOpen}>
+              <Button type="primary" shape="circle" icon={<PlusOutlined />} className="m-1" />
+            </Popover>
+            
+            {meta.use_deep_thought && (
+              <Tag
+                closable
+                onClose={() => setMeta({ use_deep_thought: false })}
+                className="flex items-center m-1"
+                icon={<FileSearchOutlined/>}
+                color="processing"
               >
-                <span className="text-2xl">{agents.find(a => a.id === selectedAgentId)?.avatar}</span>
-                <span className="text-sm font-medium text-gray-700">{agents.find(a => a.id === selectedAgentId)?.name}</span>
-                <span className='text-sm text-red-500' style={{ display: deleteAgent ? 'block' : 'none' }}
-                  onClick={handleDeleteAgent}
-                >
-                  <DeleteOutlined />
-                </span>
-              </div>
-            </div>
-          )}
+                深度思考
+              </Tag>
+            )}
 
-          {/* 输入框 */}
+            <div className="flex-1">
           <Sender
             ref={senderRef}
             value={value}
             onChange={setValue}
             onSubmit={handleSubmit}
-            placeholder="请输入消息..."
+                placeholder={meta.use_deep_thought ? "" : "问问我..."}
             submitType="enter"
-          />
-
-          {/* 功能选择区域 */}
-          <div className="mt-2 flex items-center gap-2 flex-wrap">
-            {/* 知识库选择 */}
-            <div className="flex items-center gap-1">
-              <Select
-                placeholder="选择知识库"
-                allowClear
-                size="small"
-                style={{ minWidth: 120 }}
-                value={databases.find(db => db.db_id === meta.db_id)?.id || undefined}
-                onChange={handleDatabaseChange}
-                suffixIcon={<DatabaseOutlined />}
-              >
-                {databases.map(db => (
-                  <Option key={db.id} value={db.id}>
-                    {db.name}
-                  </Option>
-                ))}
-              </Select>
-              {meta.db_id && (
-                <Tag color="blue">
-                  知识库已选
-                </Tag>
-              )}
-            </div>
-
-            {/* 知识图谱按钮 */}
-            <div
-              className={`flex items-center gap-1 px-3 py-1 rounded-full border cursor-pointer transition-all ${meta.use_graph
-                ? 'bg-blue-500 text-white border-blue-500'
-                : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
-                }`}
-              onClick={() => handleGraphToggle(!meta.use_graph)}
-            >
-              <PartitionOutlined />
-              <span className="text-sm">知识图谱</span>
+                style={{
+                  '--ant-input-bg-color': 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                } as React.CSSProperties}
+              />
             </div>
           </div>
         </div>

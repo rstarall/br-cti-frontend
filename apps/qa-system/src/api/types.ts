@@ -102,6 +102,19 @@ export interface ChatMessageItem {
   created_at: string;            // 创建时间
 }
 
+// 混合检索响应 (simple mode)
+export interface HybridRetrievalResponse {
+  status: string;
+  query: string;
+  generated_answer: {
+    content?: string;
+    model_name?: string;
+    model_provider?: string;
+    error?: string;
+  };
+  retrieval_summary?: string;
+}
+
 // 创建会话请求
 export interface CreateSessionRequest {
   user_id: number;

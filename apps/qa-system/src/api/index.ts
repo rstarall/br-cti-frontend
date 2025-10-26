@@ -4,7 +4,17 @@ import { useAuthStore } from '@/stores/authStore';
 // 创建axios实例
 const api: AxiosInstance = axios.create({
   baseURL: '/api',
-  timeout: 30000,
+  timeout: 300000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// 为耗时长的请求创建专用的axios实例
+const longRequestApi: AxiosInstance = axios.create({
+  baseURL: '/api',
+  timeout: 1200000, // 20分钟超时
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -36,6 +46,29 @@ api.interceptors.request.use(
   },
   (error) => {
     console.error('请求拦截器错误:', error);
+    return Promise.reject(error);
+  }
+);
+
+// 为 longRequestApi 应用相同的拦截器
+longRequestApi.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    console.log('发送长时API请求:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      data: config.data,
+      params: config.params
+    });
+    try {
+      const token = useAuthStore.getState().token;
+      if (token) {
+        (config.headers as any).Authorization = `Bearer ${token}`;
+      }
+    } catch { }
+    return config;
+  },
+  (error) => {
+    console.error('长时请求拦截器错误:', error);
     return Promise.reject(error);
   }
 );
@@ -77,6 +110,29 @@ api.interceptors.response.use(
       console.error('服务器内部错误');
     }
 
+    return Promise.reject(error);
+  }
+);
+
+// 为 longRequestApi 应用相同的响应拦截器
+longRequestApi.interceptors.response.use(
+  (response: AxiosResponse) => {
+    return response;
+  },
+  (error) => {
+    console.error('长时响应拦截器错误:', {
+      message: error.message,
+      status: error.response?.status,
+      url: error.config?.url,
+    });
+    if (error.response?.status === 401) {
+      try {
+        useAuthStore.getState().clear();
+      } catch { }
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
+    }
     return Promise.reject(error);
   }
 );
@@ -158,4 +214,5 @@ export { GraphAPI } from './graph';
 // 导出类型
 export * from './types';
 
+export { longRequestApi }; // 导出新的实例
 export default api;

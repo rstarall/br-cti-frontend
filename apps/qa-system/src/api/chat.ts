@@ -1,4 +1,4 @@
-import api, { createStreamRequest } from './index';
+import api, { createStreamRequest, longRequestApi } from './index';
 import {
   ChatRequest,
   ChatStreamChunk,
@@ -13,7 +13,8 @@ import {
   CreateSessionRequest,
   CreateSessionResponse,
   UpdateSessionRequest,
-  GetSessionsResponse
+  GetSessionsResponse,
+  HybridRetrievalResponse,
 } from './types';
 
 /**
@@ -154,6 +155,36 @@ export class ChatAPI {
    */
   static async getSession(threadId: string): Promise<ChatSession> {
     const response = await api.get<ChatSession>(`/chat/sessions/${threadId}`);
+    return response.data;
+  }
+
+  static async hybridRetrieval(
+    query: string,
+    meta: any,
+    history: any[], // Changed from Message[] to any[] to match the new type
+    threadId: string | null
+  ): Promise<HybridRetrievalResponse> {
+    // 清理meta对象，只发送后端需要的参数
+    const cleanedMeta: { [key: string]: any } = {};
+    const allowedKeys = [
+      'db_id', 'use_hybrid_retrieval', 'vector_top_k', 'vector_distance_threshold',
+      'graph_hops', 'RERANK_TOP_K', 'use_web', 'show_retrieval_info',
+      'system_prompt', 'model_provider', 'model_name'
+    ];
+
+    for (const key of allowedKeys) {
+      if (meta[key] !== undefined && meta[key] !== null && meta[key] !== '') {
+        cleanedMeta[key] = meta[key];
+      }
+    }
+
+    const response = await longRequestApi.post<HybridRetrievalResponse>('/chat/hybrid-retrieval', {
+      query,
+      meta: cleanedMeta, // 使用清理后的meta对象
+      history: history.map(m => ({ role: m.role, content: m.content })),
+      thread_id: threadId,
+      response_mode: 'simple',
+    });
     return response.data;
   }
 }

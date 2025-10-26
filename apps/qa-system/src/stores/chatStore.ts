@@ -30,6 +30,10 @@ export type ChatMeta = {
   model_name?: string;
   use_web?: boolean;
   show_retrieval_info?: boolean;
+  search_mode?: 'local' | 'global' | 'hybrid';
+  top_k?: number;
+  threshold?: number;
+  use_deep_thought?: boolean;
 };
 
 export type ChatState = {
@@ -310,9 +314,9 @@ const useStore = create<ChatState>()(
             .filter((msg: Message) => !msg.streaming && !msg.loading)
             .slice(-10) // 最近10条
             .map((msg: Message) => ({
-              role: msg.role,
-              content: msg.content
-            }));
+                role: msg.role,
+                content: msg.content
+              }));
 
           if (localHistory.length > 0) {
             requestBody.history = localHistory;
